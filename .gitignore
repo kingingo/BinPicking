@@ -1,0 +1,5 @@
+*.off
+*.ply
+*.pt
+.DS_Store
+*.pyc
