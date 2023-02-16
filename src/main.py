@@ -141,11 +141,10 @@ if __name__ == '__main__':
                 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False,
                                         num_workers=6)
 
-                match modelname:
-                    case "pointnet_transfer":
-                        model = PointNetClassifier(num_classes=num_classes)
-                    case _:
-                        model = pointnet.Net().to(device)
+                if modelname == 'pointnet_transfer':
+                    model = PointNetClassifier(num_classes=num_classes)
+                else:
+                    model = pointnet.Net().to(device)
                         
                 for epoch in range(1, 201):
                     train(model, modelname, train_loader, opt_set[1],epoch, device)
