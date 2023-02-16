@@ -5,6 +5,7 @@ import models.pointnet.pointnet as pointnet
 from models.pointnet_transfer.classifier import PointNetClassifier
 import torch.nn.functional as F
 from torch_geometric.datasets import ModelNet
+import models.pointnet_transfer.modelnet as dataset
 from torch_geometric.loader import DataLoader
 import os.path as osp
 import argparse
@@ -59,7 +60,7 @@ def train(model, model_name, dataloader, optimizer, epoch, device, print_freq=10
         optimizer.zero_grad()
         
         if model_name == 'pointnet_transfer':
-            output, trans_inp, trans_feat = model(data.x)
+            output, trans_inp, trans_feat = model(data.pos)
             loss = F.cross_entropy(output, data.y)
             if trans_inp is not None:
                 loss += 0.001 * orthogonality_constraint(trans_inp)
@@ -145,17 +146,26 @@ if __name__ == '__main__':
     for opt_name in optimizer_list:
         for pre_trans_set in pre_transformation_list:
             for trans_set in transformation_list:
-                train_dataset = ModelNet(path, '10', True, trans_set[1], pre_trans_set[1])
-                test_dataset = ModelNet(path, '10', False, trans_set[1], pre_trans_set[1])
+                
+
+                if modelname == 'pointnet_transfer':
+                    train_dataset = dataset.ModelNetTrans(path,True)
+                    test_dataset = dataset.ModelNetTrans(path,False);
+                    
+                    model = PointNetClassifier(num_classes=num_classes)
+                else:
+                    train_dataset = ModelNet(path, '10', True, trans_set[1], pre_trans_set[1])
+                    test_dataset = ModelNet(path, '10', False, trans_set[1], pre_trans_set[1])
+                    
+                    model = pointnet.Net().to(device)
+                
                 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,
                                         num_workers=6)
                 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False,
                                         num_workers=6)
-
-                if modelname == 'pointnet_transfer':
-                    model = PointNetClassifier(num_classes=num_classes)
-                else:
-                    model = pointnet.Net().to(device)
+                
+                for i, data in enumerate(train_loader, 0):
+                    print(data);
                         
                 optimizer = get_optimizer(opt_name, model);
                         
