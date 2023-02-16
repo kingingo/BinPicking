@@ -1,6 +1,7 @@
 from torch_geometric.datasets import ModelNet
 from torch_geometric.loader import DataLoader
 from torch_geometric.nn import MLP, PointConv, fps, global_max_pool, radius
+import torch_geometric
 import torch
 
 class SAModule(torch.nn.Module):
@@ -54,4 +55,11 @@ class Net(torch.nn.Module):
 
         return self.mlp(x).log_softmax(dim=-1)
     
+class ModelNetPoint(torch_geometric.datasets.ModelNet):
+    def __init__(self, root, name='10', train=True, transform=None,
+                 pre_transform=None, pre_filter=None):
+        super().__init__(root, name, train, transform, pre_transform, pre_filter);
+        
+    def __getitem__(self, idx):
+        return super().__getitem__(self,idx), None
     
