@@ -5,7 +5,7 @@ import torch
 from torch.utils.data import Dataset
 
 
-def _create_input_pairs(dataset_path):
+def _create_input_pairs(dataset_path, training):
     """
     Creates (pointclouds, class_index) pairs from dataset path
     """
@@ -14,7 +14,13 @@ def _create_input_pairs(dataset_path):
     label_strings = dict(zip(range(len(folders)), folders))
     data_pairs = []
     for idx, folder in enumerate(folders):
-        subfolder = osp.join(dataset_path, folder)
+        subfolder = osp.join(dataset_path, folder, 'train' if training else 'test')
+        
+        if not osp.exists(subfolder):
+            print("folder not found {subfolder}")
+            continue;
+            
+        
         files_in_subfolder = os.listdir(subfolder)
         data_pairs.extend([(osp.join(subfolder, fn), idx) for fn in files_in_subfolder])
     return data_pairs, label_strings
@@ -80,7 +86,7 @@ class ModelNetTrans(Dataset):
         """
         super(ModelNetTrans, self).__init__()
         self.training = training
-        self.data_pairs, self.label_strings = _create_input_pairs(dataset_path)
+        self.data_pairs, self.label_strings = _create_input_pairs(dataset_path, training)
         self.num_classes = len(self.label_strings)
         self.num_points = num_points
         self.seed = seed
