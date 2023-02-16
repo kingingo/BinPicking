@@ -120,7 +120,7 @@ if __name__ == '__main__':
     
     
     print("Training PointNet Classifier")
-    print("Dataset: {}/{}".format(args.dataset_dir, args.dataset_name))
+    print("Dataset: data/{}".format(args.dataset))
     print("Model: {}".format(modelname))
     
     path = osp.join(osp.dirname(osp.realpath(__file__)), '..',
