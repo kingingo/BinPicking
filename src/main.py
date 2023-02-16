@@ -27,13 +27,21 @@ def create_pre_transformation_list():
     
     return pre_transformations;
     
+def get_optimizer(name, model):
+    if name == 'Adam':
+        return torch.optim.Adam(model.parameters(), lr=0.001);
+    elif name == 'AdamW':
+        return torch.optim.AdamW(model.parameters(), lr=0.001)
+    elif name == 'SGD':
+        return torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+    
 
-def create_optimization_list(model):
+def create_optimization_list():
     optimizer_list = [];
     
-    optimizer_list.append(['Adam',torch.optim.Adam(model.parameters(), lr=0.001)]);
-    optimizer_list.append(['AdamW',torch.optim.AdamW(model.parameters(), lr=0.001)]);
-    optimizer_list.append(['SGD', torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)]);
+    optimizer_list.append('Adam');
+    optimizer_list.append('AdamW');
+    optimizer_list.append('SGD');
     
     return optimizer_list;
 
@@ -131,7 +139,7 @@ if __name__ == '__main__':
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
-    for opt_set in optimizer_list:
+    for opt_name in optimizer_list:
         for pre_trans_set in pre_transformation_list:
             for trans_set in transformation_list:
                 train_dataset = ModelNet(path, '10', True, trans_set[1], pre_trans_set[1])
@@ -146,13 +154,15 @@ if __name__ == '__main__':
                 else:
                     model = pointnet.Net().to(device)
                         
+                optimizer = get_optimizer(opt_name, model);
+                        
                 for epoch in range(1, 201):
-                    train(model, modelname, train_loader, opt_set[1],epoch, device)
+                    train(model, modelname, train_loader, optimizer,epoch, device)
                     test_acc = test(model, modelname, test_loader, epoch, device)
                     #print(f'Opt: {opt_set[0]}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}, Epoch: {epoch:03d}, Test: {test_acc:.4f}')
                 
-                save_path = osp.join(osp.dirname(osp.realpath(__file__)), 'models', opt_set[0], pre_trans_set[0], trans_set[0]);
+                save_path = osp.join(osp.dirname(osp.realpath(__file__)), 'models', opt_name, pre_trans_set[0], trans_set[0]);
                 torch.save(model, save_path);
-                print(f'save model with Opt: {opt_set[0]}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}');
+                print(f'save model with Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}');
     
     
