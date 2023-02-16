@@ -10,6 +10,7 @@ import os.path as osp
 import argparse
 import util
 import time
+import json
 from models.pointnet_transfer.stn import orthogonality_constraint
 
 def create_transformation_list():
@@ -148,6 +149,10 @@ if __name__ == '__main__':
                                         num_workers=6)
                 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False,
                                         num_workers=6)
+
+    
+                for i, data in enumerate(train_loader, 0):
+                    print("DATA {} {}".format(i, json.dumps(data)));
 
                 if modelname == 'pointnet_transfer':
                     model = PointNetClassifier(num_classes=num_classes)
