@@ -165,6 +165,7 @@ if __name__ == '__main__':
                     print(f'Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}, Epoch: {epoch:03d}, Test: {test_acc:.4f}')
                 
                 save_path = osp.join(osp.dirname(osp.realpath(__file__)), 'models', opt_name, pre_trans_set[0], trans_set[0]);
+                osp.mkdir(save_path)
                 torch.save(model, save_path);
                 print(f'save model with Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}');
     
