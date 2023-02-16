@@ -17,7 +17,7 @@ def _create_input_pairs(dataset_path, training):
         subfolder = osp.join(dataset_path, folder, 'train' if training else 'test')
         
         if not osp.exists(subfolder):
-            print("folder not found {subfolder}")
+            print(f"folder not found {subfolder}")
             continue;
             
         
