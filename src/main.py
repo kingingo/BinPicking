@@ -96,16 +96,18 @@ def test(model, model_name, dataloader, epoch, device):
             start = time.time()
             
             inputs = data.to(device)
-            output = model(inputs)[0]
+            output = model(inputs)
             
             end = time.time()
             avg_time.update(end - start)
             
             if model_name == 'pointnet_transfer':
-                loss = F.cross_entropy(output, data.y)
+                loss = F.cross_entropy(output[0], data.y)
                 avg_loss.update(loss.item())
-            
-            pred = torch.max(output.data, dim=1)[1]
+                pred = torch.max(output.data, dim=1)[1]
+            else:
+                pred = output.max(1)[1]
+                
             correct += (pred == data.y).sum().item()
             total += data.y.size(0)
     acc = float(correct) / float(total)
