@@ -149,6 +149,7 @@ if __name__ == '__main__':
                 
 
                 if modelname == 'pointnet_transfer':
+                    path = osp.join(path, 'raw')
                     train_dataset = dataset.ModelNetTrans(path,True)
                     test_dataset = dataset.ModelNetTrans(path,False);
                     
