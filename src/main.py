@@ -150,10 +150,6 @@ if __name__ == '__main__':
                 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False,
                                         num_workers=6)
 
-    
-                for i, data in enumerate(train_loader, 0):
-                    print("DATA {} {}".format(i, data));
-
                 if modelname == 'pointnet_transfer':
                     model = PointNetClassifier(num_classes=num_classes)
                 else:
