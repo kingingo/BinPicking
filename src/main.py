@@ -54,12 +54,12 @@ def train(model, model_name, dataloader, optimizer, epoch, device, print_freq=10
 
     for i, data in enumerate(dataloader, 0):
         start = time.time()
-        
+        print(data);
         data = data.to(device)
         optimizer.zero_grad()
         
         if model_name == 'pointnet_transfer':
-            output, trans_inp, trans_feat = model(data)
+            output, trans_inp, trans_feat = model(data.x)
             loss = F.cross_entropy(output, data.y)
             if trans_inp is not None:
                 loss += 0.001 * orthogonality_constraint(trans_inp)
