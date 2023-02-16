@@ -118,6 +118,11 @@ if __name__ == '__main__':
     #Choose model
     modelname = args.model;
     
+    
+    print("Training PointNet Classifier")
+    print("Dataset: {}/{}".format(args.dataset_dir, args.dataset_name))
+    print("Model: {}".format(modelname))
+    
     path = osp.join(osp.dirname(osp.realpath(__file__)), '..',
                     'data/' + args.dataset)
     optimizer_list = create_optimization_list();
