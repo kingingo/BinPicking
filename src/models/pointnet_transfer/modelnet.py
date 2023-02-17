@@ -36,6 +36,7 @@ def _parse_off_vertices(filename):
     Parses vertex data from OFF file
     """
     lines = None
+    print(f'parse file {filename}');
     with open(filename, 'r') as f:
         lines = f.readlines()
     assert len(lines) > 2
