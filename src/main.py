@@ -13,6 +13,7 @@ import util
 import time
 import json
 from models.pointnet_transfer.stn import orthogonality_constraint
+import logging
 
 def create_transformation_list():
     transformations = [];
@@ -47,6 +48,10 @@ def create_optimization_list():
     
     return optimizer_list;
 
+def plog(msg):
+    logging.info(msg)
+    print(msg)
+
 def train(model, model_name, dataloader, optimizer, epoch, device, print_freq=10):
     model.train()
     
@@ -79,7 +84,7 @@ def train(model, model_name, dataloader, optimizer, epoch, device, print_freq=10
         avg_time.update(end - start)
         
         if i > 0 and i % print_freq == 0:
-            print('Train Epoch {:3} [{:3.0f}% of {}]: Loss: {:6.3f}'
+            plog('Train Epoch {:3} [{:3.0f}% of {}]: Loss: {:6.3f}'
                   .format(epoch, (i + 1) / len(dataloader) * 100.0,
                           len(dataloader.dataset), loss.item()))
     return avg_loss.val, avg_time.val
@@ -115,15 +120,36 @@ def test(model, model_name, dataloader, epoch, device):
             correct += (pred == labels).sum().item()
             total += labels.size(0)
     acc = float(correct) / float(total)
-    print('Test Epoch {:3}: Avg. loss: {:6.3f}, Accuracy: {:.2%}, Avg. Time/batch: {:5.3f}s'
+    plog('Test Epoch {:3}: Avg. loss: {:6.3f}, Accuracy: {:.2%}, Avg. Time/batch: {:5.3f}s'
           .format(epoch, avg_loss.val, acc, avg_time.val))
     return avg_loss.val, avg_time.val, acc
+    
+
+def start_model(model, train_dataset, test_dataset, opt_name, device, log_name):
+    model.to(device)
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,
+                                            num_workers=6)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False,
+                            num_workers=6)
+            
+    optimizer = get_optimizer(opt_name, model);
+    
+    logging.basicConfig(filename=log_name, encoding='utf-8', level=logging.DEBUG)        
+    for epoch in range(1, 201):
+        train(model, modelname, train_loader, optimizer,epoch, device)
+        avg_loss, avg_time, test_acc = test(model, modelname, test_loader, epoch, device)
+        plog(f'Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}, Epoch: {epoch:03d}, Test: {test_acc:.4f}')
+    
+    save_path = osp.join(osp.dirname(osp.realpath(__file__)), 'models', opt_name, pre_trans_set[0], trans_set[0]);
+    osp.mkdir(save_path)
+    torch.save(model, save_path);
+    plog(f'save model with Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}');
 
 if __name__ == '__main__':
     
     #Argument Parser
     parser = argparse.ArgumentParser(description="Script for training a \ Pointnet classifier");
-    parser.add_argument("--model", type=str, choices=("pointnet","pointnet_transfer"), help="Choose a model");
+    parser.add_argument("--model", type=str, choices=("pointnet","pointnet_transfer", "all"), help="Choose a model");
     parser.add_argument("--dataset", type=str, choices=("ModelNet40",), help="Name of dataset");
     args = parser.parse_args();
     
@@ -131,56 +157,45 @@ if __name__ == '__main__':
     if args.dataset == "ModelNet40":
         num_classes = 40
     
-    #Choose model
-    modelname = args.model;
+    if args.model == 'all':
+        models = ["pointnet","pointnet_transfer"];
+    else:
+        models = [args.model];
     
-    
-    print("Training PointNet Classifier")
-    print("Dataset: data/{}".format(args.dataset))
-    print("Model: {}".format(modelname))
-    
-    path = osp.join(osp.dirname(osp.realpath(__file__)), '..',
-                    'data/' + args.dataset)
-    optimizer_list = create_optimization_list();
-    pre_transformation_list = create_pre_transformation_list();
-    transformation_list = create_transformation_list();
-    
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    
-    for opt_name in optimizer_list:
-        for pre_trans_set in pre_transformation_list:
-            for trans_set in transformation_list:
+    for modelname in models:
+        print("Training PointNet Classifier")
+        print("Dataset: data/{}".format(args.dataset))
+        print("Model: {}".format(modelname))
+        
+        path = osp.join(osp.dirname(osp.realpath(__file__)), '..',
+                        'data/' + args.dataset)
+        optimizer_list = create_optimization_list();
+        pre_transformation_list = create_pre_transformation_list();
+        transformation_list = create_transformation_list();
+        
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        for opt_name in optimizer_list:
+            if modelname == 'pointnet_transfer':
+                log_name = modelname + "_" + opt_name + ".log";
+                path = osp.join(path, 'raw')
+                train_dataset = dataset.ModelNetTrans(path, 2048,True)
+                test_dataset = dataset.ModelNetTrans(path, 2048,False);
                 
-
-                if modelname == 'pointnet_transfer':
-                    path = osp.join(path, 'raw')
-                    train_dataset = dataset.ModelNetTrans(path, 2048,True)
-                    test_dataset = dataset.ModelNetTrans(path, 2048,False);
-                    
-                    model = PointNetClassifier(num_classes=num_classes)
-                else:
-                    train_dataset = pointnet.ModelNetPoint(path, '10', True, trans_set[1], pre_trans_set[1])
-                    test_dataset = pointnet.ModelNetPoint(path, '10', False, trans_set[1], pre_trans_set[1])
-                    
-                    model = pointnet.Net()
-                    
-                model.to(device)
+                model = PointNetClassifier(num_classes=num_classes)
+                start_model(model, train_dataset, test_dataset, opt_name, device, log_name);
                 
-                train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,
-                                        num_workers=6)
-                test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False,
-                                        num_workers=6)
+        
+            if modelname == 'pointnet_transfer':
+                for pre_trans_set in pre_transformation_list:
+                    for trans_set in transformation_list:
+                        log_name = modelname + "_" + opt_name + "_" + pre_trans_set[0] + "_" + trans_set[0] + ".log";
+                        train_dataset = pointnet.ModelNetPoint(path, '10', True, trans_set[1], pre_trans_set[1])
+                        test_dataset = pointnet.ModelNetPoint(path, '10', False, trans_set[1], pre_trans_set[1])
                         
-                optimizer = get_optimizer(opt_name, model);
-                        
-                for epoch in range(1, 201):
-                    train(model, modelname, train_loader, optimizer,epoch, device)
-                    avg_loss, avg_time, test_acc = test(model, modelname, test_loader, epoch, device)
-                    print(f'Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}, Epoch: {epoch:03d}, Test: {test_acc:.4f}')
-                
-                save_path = osp.join(osp.dirname(osp.realpath(__file__)), 'models', opt_name, pre_trans_set[0], trans_set[0]);
-                osp.mkdir(save_path)
-                torch.save(model, save_path);
-                print(f'save model with Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}');
+                        model = pointnet.Net()
+                        start_model(model, train_dataset, test_dataset, opt_name, device, log_name);
+                    
+                    
     
     
