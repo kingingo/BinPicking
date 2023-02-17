@@ -61,5 +61,7 @@ class ModelNetPoint(torch_geometric.datasets.ModelNet):
         super().__init__(root, name, train, transform, pre_transform, pre_filter);
         
     def __getitem__(self, idx):
-        return super().__getitem__(self,idx), None
+        value = super().__getitem__(idx);
+        
+        return value, None
     
