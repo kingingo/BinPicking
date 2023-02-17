@@ -140,7 +140,7 @@ def start_model(model, train_dataset, test_dataset, opt_name, device, file_name)
     for epoch in range(1, 201):
         train(model, modelname, train_loader, optimizer,epoch, device)
         avg_loss, avg_time, test_acc = test(model, modelname, test_loader, epoch, device)
-        plog(f'Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}, Epoch: {epoch:03d}, Test: {test_acc:.4f}')
+        plog(f'Epoch: {epoch:03d}, Test: {test_acc:.4f}')
     
     save_path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'models');
     
