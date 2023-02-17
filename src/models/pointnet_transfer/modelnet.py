@@ -21,7 +21,11 @@ def _create_input_pairs(dataset_path, training):
             continue;
             
         
-        print(f"folder found {subfolder}")
+        if(training):
+            print(f"training folder found {subfolder}")
+        else:
+            print(f"test folder found {subfolder}")
+        
         files_in_subfolder = os.listdir(subfolder)
         data_pairs.extend([(osp.join(subfolder, fn), idx) for fn in files_in_subfolder])
     return data_pairs, label_strings
