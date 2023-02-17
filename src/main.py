@@ -126,7 +126,7 @@ def test(model, model_name, dataloader, epoch, device):
     return avg_loss.val, avg_time.val, acc
     
 
-def start_model(model, train_dataset, test_dataset, opt_name, device, log_name):
+def start_model(model, train_dataset, test_dataset, opt_name, device, file_name):
     model.to(device)
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,
                                             num_workers=6)
@@ -134,14 +134,14 @@ def start_model(model, train_dataset, test_dataset, opt_name, device, log_name):
                             num_workers=6)
             
     optimizer = get_optimizer(opt_name, model);
-    
+    log_name = file_name + ".log";
     logging.basicConfig(filename=log_name, encoding='utf-8', level=logging.DEBUG)        
     for epoch in range(1, 201):
         train(model, modelname, train_loader, optimizer,epoch, device)
         avg_loss, avg_time, test_acc = test(model, modelname, test_loader, epoch, device)
         plog(f'Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}, Epoch: {epoch:03d}, Test: {test_acc:.4f}')
     
-    save_path = osp.join(osp.dirname(osp.realpath(__file__)), 'models', opt_name, pre_trans_set[0], trans_set[0]);
+    save_path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'models', file_name + '.model');
     os.mkdir(save_path)
     torch.save(model, save_path);
     plog(f'save model with Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}');
@@ -178,7 +178,7 @@ if __name__ == '__main__':
         
         for opt_name in optimizer_list:
             if modelname == 'pointnet_transfer':
-                log_name = modelname + "_" + opt_name + ".log";
+                log_name = modelname + "_" + opt_name;
                 path = osp.join(path, 'raw')
                 train_dataset = dataset.ModelNetTrans(path, 2048,True)
                 test_dataset = dataset.ModelNetTrans(path, 2048,False);
@@ -188,7 +188,7 @@ if __name__ == '__main__':
             elif modelname == 'pointnet':
                 for pre_trans_set in pre_transformation_list:
                     for trans_set in transformation_list:
-                        log_name = modelname + "_" + opt_name + "_" + pre_trans_set[0] + "_" + trans_set[0] + ".log";
+                        log_name = modelname + "_" + opt_name + "_" + pre_trans_set[0] + "_" + trans_set[0];
                         train_dataset = pointnet.ModelNetPoint(path, '10', True, trans_set[1], pre_trans_set[1])
                         test_dataset = pointnet.ModelNetPoint(path, '10', False, trans_set[1], pre_trans_set[1])
                         
