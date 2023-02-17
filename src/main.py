@@ -102,8 +102,8 @@ def test(model, model_name, dataloader, epoch, device):
             
             if model_name == 'pointnet_transfer':
                 labels = labels.to(device)
-                
-                loss = F.cross_entropy(output[0], labels)
+                output = output[0]
+                loss = F.cross_entropy(output, labels)
                 avg_loss.update(loss.item())
                 pred = torch.max(output.data, dim=1)[1]
             else:
