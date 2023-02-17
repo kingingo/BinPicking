@@ -53,21 +53,22 @@ def train(model, model_name, dataloader, optimizer, epoch, device, print_freq=10
     avg_loss = util.AverageMeter()
     avg_time = util.AverageMeter()
 
-    for i, data in enumerate(dataloader, 0):
+    for i, (inputs, labels) in enumerate(dataloader, 0):
         start = time.time()
-        print(data);
-        data = data.to(device)
+        
         optimizer.zero_grad()
         
         if model_name == 'pointnet_transfer':
-            output, trans_inp, trans_feat = model(data.pos)
-            loss = F.cross_entropy(output, data.y)
+            inputs, labels = inputs.to(device), labels.to(device)
+            output, trans_inp, trans_feat = model(inputs)
+            loss = F.cross_entropy(output, labels)
             if trans_inp is not None:
                 loss += 0.001 * orthogonality_constraint(trans_inp)
             if trans_feat is not None:
                 loss += 0.001 * orthogonality_constraint(trans_feat)
         else:
-            loss = F.nll_loss(model(data), data.y)
+            inputs = inputs.to(device)
+            loss = F.nll_loss(model(inputs), inputs.y)
             
         loss.backward()
         optimizer.step()
@@ -93,24 +94,26 @@ def test(model, model_name, dataloader, epoch, device):
     correct = 0
     total = 0
     with torch.no_grad():
-        for _, data in enumerate(dataloader, 0):
+        for i, (inputs, labels) in enumerate(dataloader, 0):
             start = time.time()
             
-            inputs = data.to(device)
+            inputs = inputs.to(device)
             output = model(inputs)
             
-            end = time.time()
-            avg_time.update(end - start)
-            
             if model_name == 'pointnet_transfer':
-                loss = F.cross_entropy(output[0], data.y)
+                labels = labels.to(device)
+                
+                loss = F.cross_entropy(output[0], labels)
                 avg_loss.update(loss.item())
                 pred = torch.max(output.data, dim=1)[1]
             else:
+                labels = inputs.y
                 pred = output.max(1)[1]
                 
-            correct += (pred == data.y).sum().item()
-            total += data.y.size(0)
+            end = time.time()
+            avg_time.update(end - start)
+            correct += (pred == labels).sum().item()
+            total += labels.size(0)
     acc = float(correct) / float(total)
     print('Test Epoch {:3}: Avg. loss: {:6.3f}, Accuracy: {:.2%}, Avg. Time/batch: {:5.3f}s'
           .format(epoch, avg_loss.val, acc, avg_time.val))
