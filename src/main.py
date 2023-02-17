@@ -2,9 +2,6 @@
 
 import os
 
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
-os.environ["CUDA_VISIBLE_DEVICES"]="1"
-
 import torch_geometric.transforms as T
 import torch
 import models.pointnet.pointnet as pointnet
@@ -186,7 +183,10 @@ if __name__ == '__main__':
         transformation_list = create_transformation_list();
         
         if torch.cuda.is_available():
-            device_id = 'cuda:1'
+            num_of_gpus = torch.cuda.device_count()
+            print(f'Amount of GPUs {num_of_gpus}')
+            
+            device_id = 'cuda:'+(num_of_gpus-1)
             print("choose device "+device_id)
             device = torch.device(device_id)
         else:
