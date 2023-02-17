@@ -141,8 +141,9 @@ def start_model(model, train_dataset, test_dataset, opt_name, device, file_name)
         avg_loss, avg_time, test_acc = test(model, modelname, test_loader, epoch, device)
         plog(f'Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}, Epoch: {epoch:03d}, Test: {test_acc:.4f}')
     
-    save_path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'models', file_name + '.model');
+    save_path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'models');
     os.mkdir(save_path)
+    save_path += file_name + '.model';
     torch.save(model, save_path);
     plog(f'save model with Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}');
 
