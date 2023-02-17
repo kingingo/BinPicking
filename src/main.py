@@ -1,4 +1,10 @@
 
+
+import os
+
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
+os.environ["CUDA_VISIBLE_DEVICES"]="1"
+
 import torch_geometric.transforms as T
 import torch
 import models.pointnet.pointnet as pointnet
@@ -7,7 +13,6 @@ import torch.nn.functional as F
 from torch_geometric.datasets import ModelNet
 import models.pointnet_transfer.modelnet as dataset
 from torch_geometric.loader import DataLoader
-import os
 import os.path as osp
 import argparse
 import util
@@ -152,6 +157,7 @@ def start_model(model, train_dataset, test_dataset, opt_name, device, file_name)
 
 if __name__ == '__main__':
     
+    
     #Argument Parser
     parser = argparse.ArgumentParser(description="Script for training a \ Pointnet classifier");
     parser.add_argument("--model", type=str, choices=("pointnet","pointnet_transfer", "all"), help="Choose a model");
@@ -180,7 +186,7 @@ if __name__ == '__main__':
         transformation_list = create_transformation_list();
         
         if torch.cuda.is_available():
-            device_id = 'cuda:'+args.gpu_id
+            device_id = 'cuda:1'
             print("choose device "+device_id)
             device = torch.device(device_id)
         else:
