@@ -27,7 +27,9 @@ def _create_input_pairs(dataset_path, training):
             print(f"test folder found {subfolder}")
         
         files_in_subfolder = os.listdir(subfolder)
-        data_pairs.extend([(osp.join(subfolder, fn), idx) for fn in files_in_subfolder])
+        filtered_files_in_subfolder = [file for file in files_in_subfolder if file.endswith('.off')]
+        
+        data_pairs.extend([(osp.join(subfolder, fn), idx) for fn in filtered_files_in_subfolder])
     return data_pairs, label_strings
 
 
