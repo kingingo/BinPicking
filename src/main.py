@@ -184,8 +184,8 @@ if __name__ == '__main__':
             if modelname == 'pointnet_transfer':
                 log_name = modelname + "_" + opt_name;
                 path = osp.join(path, 'raw')
-                train_dataset = dataset.ModelNetTrans(path, 2048,True)
-                test_dataset = dataset.ModelNetTrans(path, 2048,False);
+                train_dataset = dataset.ModelNetTrans(path, 1024,True)
+                test_dataset = dataset.ModelNetTrans(path, 1024,False);
                 
                 model = PointNetClassifier(num_classes=num_classes)
                 start_model(model, train_dataset, test_dataset, opt_name, device, log_name);
