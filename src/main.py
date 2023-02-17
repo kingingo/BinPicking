@@ -186,9 +186,9 @@ if __name__ == '__main__':
             num_of_gpus = torch.cuda.device_count()
             print(f'Amount of GPUs {num_of_gpus}')
             
-            device_id = 'cuda:'+str(num_of_gpus-1)
+            device_id = num_of_gpus-1
             print("choose device "+device_id)
-            device = torch.device(device_id)
+            device = torch.cuda.device(device_id)
         else:
             device = torch.device('cpu')
             
