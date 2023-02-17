@@ -19,12 +19,6 @@ def _create_input_pairs(dataset_path, training):
         if not osp.exists(subfolder):
             print(f"folder not found {subfolder}")
             continue;
-            
-        
-        if(training):
-            print(f"training folder found {subfolder}")
-        else:
-            print(f"test folder found {subfolder}")
         
         files_in_subfolder = os.listdir(subfolder)
         filtered_files_in_subfolder = [file for file in files_in_subfolder if file.endswith('.off')]
@@ -38,8 +32,8 @@ def _parse_off_vertices(filename):
     Parses vertex data from OFF file
     """
     lines = None
-    print(f'parse file {filename}');
-    with open(filename, 'r', encoding='windows-1252') as f:
+    #, encoding='windows-1252'
+    with open(filename, 'r') as f:
         lines = f.readlines()
         
     length = len(lines);
