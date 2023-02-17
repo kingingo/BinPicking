@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from torch_geometric.datasets import ModelNet
 import models.pointnet_transfer.modelnet as dataset
 from torch_geometric.loader import DataLoader
+import os
 import os.path as osp
 import argparse
 import util
@@ -141,7 +142,7 @@ def start_model(model, train_dataset, test_dataset, opt_name, device, log_name):
         plog(f'Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}, Epoch: {epoch:03d}, Test: {test_acc:.4f}')
     
     save_path = osp.join(osp.dirname(osp.realpath(__file__)), 'models', opt_name, pre_trans_set[0], trans_set[0]);
-    osp.mkdir(save_path)
+    os.mkdir(save_path)
     torch.save(model, save_path);
     plog(f'save model with Opt: {opt_name}, Trans: {trans_set[0]}, Pretrans: {pre_trans_set[0]}');
 
