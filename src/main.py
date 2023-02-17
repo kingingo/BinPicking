@@ -165,8 +165,8 @@ if __name__ == '__main__':
                 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False,
                                         num_workers=6)
                 
-                for i, (i,o) in train_loader:
-                    print(i);
+                for i, (a,o) in train_loader:
+                    print(a);
                     print(o);
                         
                 optimizer = get_optimizer(opt_name, model);
