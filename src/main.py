@@ -162,7 +162,9 @@ if __name__ == '__main__':
                     train_dataset = pointnet.ModelNetPoint(path, '10', True, trans_set[1], pre_trans_set[1])
                     test_dataset = pointnet.ModelNetPoint(path, '10', False, trans_set[1], pre_trans_set[1])
                     
-                    model = pointnet.Net().to(device)
+                    model = pointnet.Net()
+                    
+                model.to(device)
                 
                 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True,
                                         num_workers=6)
