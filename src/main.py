@@ -184,9 +184,7 @@ if __name__ == '__main__':
                 
                 model = PointNetClassifier(num_classes=num_classes)
                 start_model(model, train_dataset, test_dataset, opt_name, device, log_name);
-                
-        
-            if modelname == 'pointnet_transfer':
+            elif modelname == 'pointnet':
                 for pre_trans_set in pre_transformation_list:
                     for trans_set in transformation_list:
                         log_name = modelname + "_" + opt_name + "_" + pre_trans_set[0] + "_" + trans_set[0] + ".log";
