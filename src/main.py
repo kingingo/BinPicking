@@ -165,7 +165,7 @@ if __name__ == '__main__':
                 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False,
                                         num_workers=6)
                 
-                for i, (a,o) in train_loader:
+                for i, (a,o) in enumerate(train_loader, 0):
                     print(a);
                     print(o);
                         
