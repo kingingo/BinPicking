@@ -180,7 +180,9 @@ if __name__ == '__main__':
         transformation_list = create_transformation_list();
         
         if torch.cuda.is_available():
-            device = torch.device('cuda:'+args.gpu_id)
+            device_id = 'cuda:'+args.gpu_id
+            print("choose device "+device_id)
+            device = torch.device(device_id)
         else:
             device = torch.device('cpu')
             
