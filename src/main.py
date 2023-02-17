@@ -156,6 +156,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Script for training a \ Pointnet classifier");
     parser.add_argument("--model", type=str, choices=("pointnet","pointnet_transfer", "all"), help="Choose a model");
     parser.add_argument("--dataset", type=str, choices=("ModelNet40",), help="Name of dataset");
+    parser.add_argument("--gpu_id", type=str, choices=("0","1","2","3"), help="Choose the gpu device id");
     args = parser.parse_args();
     
     num_classes = 0
@@ -178,7 +179,11 @@ if __name__ == '__main__':
         pre_transformation_list = create_pre_transformation_list();
         transformation_list = create_transformation_list();
         
-        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if torch.cuda.is_available():
+            device = torch.device('cuda:'+args.gpu_id)
+        else:
+            device = torch.device('cpu')
+            
         
         for opt_name in optimizer_list:
             if modelname == 'pointnet_transfer':
