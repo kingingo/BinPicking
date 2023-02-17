@@ -118,9 +118,9 @@ def test(model, model_name, dataloader, epoch, device):
 
 if __name__ == '__main__':
     #data/ModelNet40/raw/toilet/train/toilet_0241.off
-    ver = dataset._parse_off_vertices('data/ModelNet40/raw/toilet/train/toilet_0241.off');
-    print(ver);
-    exit();
+    #ver = dataset._parse_off_vertices('data/ModelNet40/raw/toilet/train/toilet_0241.off');
+    #print(ver);
+    #exit();
     
     #Argument Parser
     parser = argparse.ArgumentParser(description="Script for training a \ Pointnet classifier");
