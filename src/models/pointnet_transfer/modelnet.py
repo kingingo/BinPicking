@@ -39,7 +39,9 @@ def _parse_off_vertices(filename):
     print(f'parse file {filename}');
     with open(filename, 'r', encoding='windows-1252') as f:
         lines = f.readlines()
-    assert len(lines) > 2
+        
+    length = len(lines);
+    assert length > 2, f"filename is {filename} {length}"
 
     # Parse header
     lines[0] = lines[0].strip()
