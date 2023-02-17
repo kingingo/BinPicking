@@ -1,7 +1,6 @@
 
 
 import os
-
 import torch_geometric.transforms as T
 import torch
 import models.pointnet.pointnet as pointnet
@@ -183,12 +182,11 @@ if __name__ == '__main__':
         transformation_list = create_transformation_list();
         
         if torch.cuda.is_available():
-            num_of_gpus = torch.cuda.device_count()
-            print(f'Amount of GPUs {num_of_gpus}')
+            print('Active CUDA Device: GPU', torch.cuda.current_device())
+            print ('Available devices ', torch.cuda.device_count())
+            print ('Current cuda device ', torch.cuda.current_device())
             
-            device_id = num_of_gpus-1
-            print("choose device "+str(device_id))
-            device = torch.cuda.device(device_id)
+            device = torch.device("cuda")
         else:
             device = torch.device('cpu')
             
