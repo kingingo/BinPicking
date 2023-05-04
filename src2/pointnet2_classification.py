@@ -1,8 +1,6 @@
 import os.path as osp
-
 import torch
 import torch.nn.functional as F
-
 import torch_geometric.transforms as T
 from torch_geometric.datasets import ModelNet
 from torch_geometric.loader import DataLoader
@@ -61,6 +59,7 @@ class Net(torch.nn.Module):
         return self.mlp(x).log_softmax(dim=-1)
 
 
+"""
 def train(epoch):
     model.train()
 
@@ -83,7 +82,6 @@ def test(loader):
         correct += pred.eq(data.y).sum().item()
     return correct / len(loader.dataset)
 
-
 if __name__ == '__main__':
     path = osp.join(osp.dirname(osp.realpath(__file__)), '..',
                     'data/ModelNet10')
@@ -103,3 +101,4 @@ if __name__ == '__main__':
         train(epoch)
         test_acc = test(test_loader)
         print(f'Epoch: {epoch:03d}, Test: {test_acc:.4f}')
+"""
