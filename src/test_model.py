@@ -7,6 +7,7 @@ import os.path as osp
 from torch_geometric.io import read_txt_array
 
 if __name__ == '__main__':
+    
     if len(sys.argv) >= 2:
         model_name = sys.argv[1]
         file = sys.argv[2]

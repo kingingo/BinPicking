@@ -1,5 +1,7 @@
 *.off
 *.ply
 *.pt
-.DS_Store
 *.pyc
+*.txt
+*.p
+.DS_Store
