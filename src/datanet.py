@@ -7,16 +7,34 @@ from torch_geometric.io import read_txt_array
 #import open3d as o3d
 import numpy as np
 class DataNet(InMemoryDataset):
+    test = False
+    modelname = ''
         
     category_ids = {
-        'data' : [0,1,2]
+        'data' : [0,1,2,3,4,5,6],
+        'stackingbox' : [1],
+        'banana' : [2],
+        'apple' : [3],
+        'orange': [4],
+        'pear' : [5],
+        'plum' : [6]
     }
         
     seg_classes = {
-        'data': [0,1,2] 
+        'data' : [0,1,2,3,4,5,6],
+        'stackingbox' : [1],
+        'banana' : [2],
+        'apple' : [3],
+        'orange': [4],
+        'pear': [5],
+        'plum': [6]
         #0 nothing
         #1 stacking box
-        #2 box
+        #2 banana
+        #3 apple
+        #4 orange
+        #5 pear
+        #6 plum
     }
     
     categories = {}
@@ -27,15 +45,24 @@ class DataNet(InMemoryDataset):
         transform: Optional[Callable] = None,
         pre_transform: Optional[Callable] = None,
         pre_filter: Optional[Callable] = None,
+        test: bool = False,
+        modelname = ''
     ):
-        self.categories = list(self.category_ids.keys())
+        self.test = test
+        self.modelname = modelname
+        if test:
+            self.categories = [list(self.category_ids.keys())[0]]
+        else:
+            self.categories = list(self.category_ids.keys())
+            
         super().__init__(root, transform, pre_transform, pre_filter)
         
         self.data, self.slices = torch.load(self.processed_paths[0])
-        self.y_mask = torch.zeros((len(self.seg_classes.keys()), 3),
+        self.y_mask = torch.zeros((len(self.seg_classes.keys()), len(self.seg_classes.keys())),
                                   dtype=torch.bool)
         for i, labels in enumerate(self.seg_classes.values()):
             self.y_mask[i, labels] = 1
+            
 
     @property
     def num_classes(self) -> int:
@@ -51,7 +78,7 @@ class DataNet(InMemoryDataset):
         
         for split in ['train', 'test']:
             for cat in self.categories:
-                plist.append(f'{cat}_{split}.pt')
+                plist.append(f'{cat}_{split}_{self.modelname}.pt')
         
         return plist
 
@@ -71,34 +98,19 @@ class DataNet(InMemoryDataset):
             
             for file in list_files:
                 data = read_txt_array(osp.join(path, file))
-                """
-                pcd = o3d.geometry.PointCloud()
-                pc = np.array(list(data))
-                pcd.points = o3d.utility.Vector3dVector(pc[:, 0:3])
-                rgb_float = np.asarray(pc[:, 3], dtype=np.float32)
-                pcd.colors = o3d.utility.Vector3dVector(np.asarray(np.vstack((rgb_float, rgb_float, rgb_float)).T))
-                label = np.asarray(pc[:, -1], dtype=np.int8)
-                pcd.labels = o3d.utility.IntVector(np.asarray(np.vstack(label).T))
-                
-                downsampled_pcd = o3d.geometry.voxel_down_sample(voxel_size=0.05)
-                cl, ind = downsampled_pcd.remove_statistical_outlier(nb_neighbors=20, std_ratio=2.0)
-                filtered_pcd = downsampled_pcd.select_down_sample(ind)
-                print("points: {}".format(len(pcd.points)))
-                print("colors: {}".format(len(pcd.colors)))
-                print("labels: {}".format(len(pcd.labels)))
-                """
-                
                 pos = data[:, :3]
                 x = data[:, 3:6]
                 y = data[:, -1].type(torch.long)
-                
-                for i in range(len(y)):
-                    if y[i] > 1:
-                        y[i] = 2
-                    y[i] = int(y[i])
-                
                 data = Data(pos=pos, x=x, y=y, category=0)
+                
+                if self.pre_filter is not None and not self.pre_filter(data):
+                    continue
+                
+                if self.pre_transform is not None:
+                    data = self.pre_transform(data)
+                
                 data_list.append(data)
                      
         data, slices = self.collate(data_list)
+        print("processed_paths:{}".format(self.processed_paths[0]))
         torch.save((data, slices), self.processed_paths[0])
