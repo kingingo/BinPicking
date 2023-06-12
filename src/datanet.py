@@ -98,9 +98,9 @@ class DataNet(InMemoryDataset):
             
             for file in list_files:
                 data = read_txt_array(osp.join(path, file))
-                pos = data[:, :3]
-                x = data[:, 3:6]
-                y = data[:, -1].type(torch.long)
+                pos = data[:, :3] #XYZ
+                x = data[:, 3:6] #rgb
+                y = data[:, -1].type(torch.long) #LABEL
                 data = Data(pos=pos, x=x, y=y, category=0)
                 
                 if self.pre_filter is not None and not self.pre_filter(data):

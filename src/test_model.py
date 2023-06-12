@@ -25,6 +25,7 @@ if __name__ == '__main__':
         gpu = sys.argv[3]
         
         model_path = osp.join(osp.dirname(osp.realpath(__file__)), '..', 'models', model_name)  
+        modelname = osp.basename(model_path).split("_")[0]
         if not osp.isfile(model_path):
             print("Couldn't find {}".format(model_path))
             exit()
@@ -46,7 +47,7 @@ if __name__ == '__main__':
         ])
         pre_transform = T.NormalizeScale()
         
-        
+        print("Modelname: {}".format(modelname))
         device = torch.device('cpu')
         data = read_txt_array(filepath)
         pos = data[:, :3]
@@ -63,8 +64,19 @@ if __name__ == '__main__':
         model = torch.load(model_path,map_location=device)
         model.eval()
         for idx, data in enumerate(dataloader):
-            data = data.to(device)
-            outs = model(data.x,data.pos,data.batch)
+            if modelname == 'pointnet':
+                t = []
+                for i in range(len(data.pos)):
+                    t.append([[data.pos[i][0],data.pos[i][1],data.pos[i][2]]])
+                
+                points = torch.tensor(t)
+                points = points.transpose(2, 1)
+                points = points.to(device)
+                outs, _, _ = model(points)
+                outs = outs.view(-1, 7)
+            else:
+                data = data.to(device)
+                outs = model(data.x, data.pos, data.batch)
         
         pred = outs.max(1)[1]
         f = open('predict.txt', 'wb')
