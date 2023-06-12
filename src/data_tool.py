@@ -61,10 +61,10 @@ def callback_filter_points_by_bbox(pos, color, label, clabel):
     x min:-0.329147785902 max:0.329147785902
     z min:0.00354268550873 max:0.360492372513
     '''
-    x_min = -0.329147785902
-    x_max = 0.329147785902
-    y_min = -0.479139149189
-    y_max = 0.479139208794
+    y_min = -0.329147785902
+    y_max = 0.329147785902
+    x_min = -0.479139149189
+    x_max = 0.479139208794
     
     if (pos[0] < x_min or pos[0] > x_max) \
         or (pos[1] < y_min or pos[1] > y_max):
@@ -420,7 +420,7 @@ def draw_data(data, draw_callback = None):
             pos = data['positions'][i]
             color = data['colors'][i]
             label = data['labels'][i]
-            clabel = data['clabels'][i]
+            clabel = data['clabels'][i] if 'clabels' in data else None
             data['colors'][i] = draw_callback(pos,color,label, clabel)
     
     pcd.point.positions = o3d.core.Tensor(data["positions"], o3d.core.float32)
@@ -733,7 +733,7 @@ if __name__ == "__main__":
             print(f"file {filepath} not found!")
             exit()
         
-        data = load_data(filepath)
+        data = load_data(filepath, 'x,y,z,r,g,b,label')
         
         if not parser.disable_info:
             print(f"found {len(data['positions'])} points")
