@@ -90,8 +90,8 @@ class STNkd(nn.Module):
 class PointNetfeat(nn.Module):
     def __init__(self, global_feat = True, feature_transform = False, device = None):
         super(PointNetfeat, self).__init__()
-        self.stn = STN3d(device=device)
-        self.conv1 = torch.nn.Conv1d(3, 64, 1)
+        self.stn = STNkd(k = 6, device=device)
+        self.conv1 = torch.nn.Conv1d(3+3, 64, 1)
         self.conv2 = torch.nn.Conv1d(64, 128, 1)
         self.conv3 = torch.nn.Conv1d(128, 1024, 1)
         self.bn1 = nn.BatchNorm1d(64)
