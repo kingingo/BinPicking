@@ -180,9 +180,7 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
     colors = []
     labels = []
     clabels = []
-    
-    if parser.with_pred_label:
-        pred_labels = []
+    pred_labels = []
     
     header = ''
     for line in lines:
@@ -205,6 +203,7 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
             b = None
             label = None
             clabel = None
+            pred_label = None
             
             for i in range(len(fields)):
                 field = fields[i]
@@ -229,6 +228,8 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
                     label = data[i] 
                 elif field == 'clabel':
                     clabel = data[i] 
+                elif field == 'pred_label':
+                    pred_label = data[i] 
                 else:
                     print("field not found! {}".format(data[i]))
                     
@@ -240,6 +241,8 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
                 labels.append(int(label))
             if clabel is not None:
                 clabels.append(int(clabel))
+            if pred_label is not None:
+                pred_labels.append(int(pred_label))
             
     data = {'fields':fields}
     
@@ -249,6 +252,8 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
         data['labels'] = labels
     if len(clabels) > 0:
         data['clabels'] = clabels
+    if len(pred_labels) > 0:
+        data['pred_labels'] = pred_labels
     if len(positions) > 0:
         data['colors'] = colors
     if len(header) > 0:
@@ -408,6 +413,7 @@ YELLOW = [255,255,0]
 BLUE = [0,0,255]
 LIGHTBLUE = [0,255,255]
 PURPLE = [255,0,255]
+WHITE = [255,255,255]
 
 def draw_data(data, draw_callback = None):
     pcd = o3d.t.geometry.PointCloud()
@@ -438,10 +444,10 @@ def draw_data(data, draw_callback = None):
     o3d.visualization.draw([pcd], raw_mode = True)
  
 def draw_callback_color(pos, color, label, clabel):
-    global GREEN, RED, YELLOW, BLUE, ORANGE
+    global GREEN, RED, YELLOW, BLUE
     
     if label <= 0:
-        return [255,255,255]
+        return WHITE
     elif label == 1: #stackingbox
         return BLUE
     elif label == 2: #banana
@@ -454,6 +460,8 @@ def draw_callback_color(pos, color, label, clabel):
         return LIGHTBLUE
     elif label == 6: #plum
         return PURPLE
+    elif label == 7: #HAMMER
+        return [0,0,0]
     else:
         return [0,0,0]
     
@@ -492,7 +500,9 @@ def convert_files():
         
         try:
             splitted = folder.split("_")
-            if len(splitted) == 4:
+            if "_a" in folder:
+                datetime = splitted[2] + "_" + splitted[3]
+            elif len(splitted) == 4:
                 datetime = splitted[2] + "_" + splitted[3]
             elif len(splitted) > 4:
                 datetime = splitted[2] + "_" + splitted[3] + "-"  + splitted[5] + "-" + splitted[6]
@@ -516,8 +526,8 @@ def convert_files():
         data = convert_data(data,callback_filter_points_by_bbox)
         label_data = convert_data(data, callback_fix_label)
         
-        if parser.labeling_all:
-            label_data = convert_data(label_data, callback_clabels)
+        #if parser.labeling_all:
+        #    label_data = convert_data(label_data, callback_clabels)
             
         if 'min' not in file:
             down_sampled_data = down_sampling_data(label_data, parser.disable_info, parser.voxel_size, label_field='labels')
@@ -677,7 +687,7 @@ def gather_all_training_files(to_training_folder = 'training', to_test_folder = 
     
 def info_data(data, field = 'clabels', spaces = 0):
     str_spaces = ' ' * spaces
-    name_maping = ['Nothing', 'Stackingbox', 'Banana', 'Apple', 'Orange', 'Pear', 'Plum']
+    name_maping = ['Nothing', 'Stackingbox', 'Banana', 'Apple', 'Orange', 'Pear', 'Plum','Hammer']
     
     if field in data:
         labels = data[field]
@@ -779,7 +789,13 @@ if __name__ == "__main__":
             print(f"file {filepath} not found!")
             exit()
         
-        data = load_data(filepath, parser.format)
+        
+        str_format = 'x,y,z,r,g,b,label'
+        
+        if parser.with_pred_label:
+            str_format = str_format + ',pred_label'
+        
+        data = load_data(filepath, str_format)
         
         if not parser.disable_info:
             print(f"found {len(data['positions'])} points")
