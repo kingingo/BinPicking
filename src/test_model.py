@@ -67,7 +67,7 @@ if __name__ == '__main__':
             if modelname == 'pointnet':
                 t = []
                 for i in range(len(data.pos)):
-                    t.append([[data.pos[i][0],data.pos[i][1],data.pos[i][2]]])
+                    t.append([[data.pos[i][0],data.pos[i][1],data.pos[i][2],data.x[i][0],data.x[i][1],data.x[i][2]]])
                 
                 points = torch.tensor(t)
                 points = points.transpose(2, 1)
@@ -79,7 +79,7 @@ if __name__ == '__main__':
                 outs = model(data.x, data.pos, data.batch)
         
         pred = outs.max(1)[1]
-        f = open('predict.txt', 'wb')
+        f = open('predict_{}.txt'.format(modelname), 'wb')
         npos = pos.numpy()
         nrgb = x.numpy()
         nlabel = y.numpy()
@@ -92,7 +92,7 @@ if __name__ == '__main__':
         #2 - banana
         #3 - apple
         #4 - orange
-        category_name = ["nothing", "stackingbox", "banana", "apple", "orange", "pear", "plum"]
+        category_name = ["nothing", "stackingbox", "banana", "apple", "orange", "pear", "plum", "hammer"]
         category_correctness = []
         for i in range(len(category_name)):
             category_correctness.append({'wrong':0, 'correct': 0, 'volume': 0, 'name': category_name[i]})
