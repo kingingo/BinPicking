@@ -31,6 +31,7 @@ except:
 
 def parse_arguments():
     parser = argparse.ArgumentParser('Model')
+    parser.add_argument('--format', type=str, default='x,y,z,r,g,b,label', help="Sets the Format for the data load Method")
     parser.add_argument('--file', type=str, default="data", help='Filename for the default data file [default: data]')
     parser.add_argument('--vis', type=str, default=None, help='Visualize File [default: None]')
     parser.add_argument('--vis_coloured', action = "store_true",  help='Visualize Label')
