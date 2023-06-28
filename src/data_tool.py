@@ -47,6 +47,7 @@ def parse_arguments():
     parser.add_argument('--convert_obj', type=str, default=None, help='Convert Objekt [default: None]')
     parser.add_argument('--num_samples', type=int, default=1000, help='Convert Objekt in "num_samples" points [default: 1000]')
     parser.add_argument('--conv_xyz', action = "store_true",  help='Convert MeshLab XYZ File and add RGB')
+    parser.add_argument('--conv_ply',action = "store_true",  help='Convert XYZ File to PLY')
     parser.add_argument('--rgb', type=str, default="0,0,0", help='RGB colour [default: 0,0,0]')
     parser.add_argument('--path', type=str, default=None, help='Path to file [default: None]')
     parser.add_argument('--str_fields', type=str, default='x,y,z,r,g,b,label,clabel', help='Data fields loaded [default: x,y,z,r,g,b,label,clabel]')
@@ -353,7 +354,6 @@ def down_sampling_data(data, disable_info = False, _voxel_size = 0.015, label_fi
     return {'header': data['header'], 'fields': data['fields'], 'positions': positions, 'colors': colors, label_field: labels}
         
 def save_data(filepath, data, header = True, str_fields = None):
-    content = data['header'] if header else ''
     
     if str_fields is None:
         fields = data['fields']
@@ -362,6 +362,14 @@ def save_data(filepath, data, header = True, str_fields = None):
     
     positions = data['positions']
     length = len(positions)
+    
+    if header:
+        if 'header' in data:
+            content = data['header']
+        else:
+            content = create_ply_header(length,','.join(fields))
+    else:
+        content = ''
     
     for i in range(length):
         for j in range(len(fields)):
@@ -691,11 +699,48 @@ def info_data(data, field = 'clabels', spaces = 0):
     for i in range(len(name_maping)):
         print("{}{} found {} labels".format(str_spaces,name_maping[i], counter_label_map[i]))
     
+def create_ply_header(volume, format = 'x,y,z,red,green,blue'):
+    header = ''
+    
+    header += 'ply\n'
+    header += 'format ascii 1.0\n'
+    header += 'element vertex %d\n' % volume
+    
+    split = format.split(',')
+    
+    for i in range(len(split)):
+        type = ''
+        name = split[i]
+        
+        if name == 'x' or name == 'y' or name == 'z':
+            type = 'float'
+        elif name == 'r':
+            type = 'uchar'
+            name = 'red'
+        elif name == 'g':
+            type = 'uchar'
+            name = 'green'
+        elif name == 'b':
+            type = 'uchar'
+            name = 'blue'
+        else:
+            type = 'uchar'
+    
+        header += 'property '+type+' '+name+'\n'
+    header += 'end_header\n'
+    return header
+    
+    
 if __name__ == "__main__":
     parser = parse_arguments()
     current_dir = osp.join(os.curdir, '..', 'ply')
     
-    if parser.conv_xyz:
+    if parser.conv_ply:
+        print("path: {}".format(parser.path))
+        print("format: {}".format(parser.format))
+        data = load_data(parser.path, str_fields=parser.format)
+        save_data(os.path.splitext(parser.path)[0] + ".ply" , data, header = True, str_fields = parser.format)
+    elif parser.conv_xyz:
         print("path: {}".format(parser.path))
         print("rgb: {}".format(parser.rgb))
         rgb = parser.rgb.split(',')

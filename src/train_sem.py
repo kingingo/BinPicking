@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import numpy as np
 from datanet import DataNet
 from torch_geometric.utils import scatter
-from torchmetrics.functional import jaccard_index
+from torchmetrics.classification import MulticlassJaccardIndex
 from torch_geometric.loader import DataLoader
 import torch_geometric.transforms as T
 from point_transformer.model import Net as NetTrans

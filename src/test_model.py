@@ -7,6 +7,7 @@ import os.path as osp
 from torch_geometric.io import read_txt_array
 from datanet import DataNet
 import torch_geometric.transforms as T
+from torchmetrics.classification import MulticlassJaccardIndex
 
 def calc_perc(part, vol):
     if part == vol:
@@ -120,6 +121,10 @@ if __name__ == '__main__':
         for i in range(len(category_name)):
             print("{}: {}/{}, {}%".format(category_name[i],category_correctness[i]['correct'], category_correctness[i]['volume'],calc_perc(category_correctness[i]['correct'], category_correctness[i]['volume'])))
         
-        
+        target = torch.tensor(y)
+        preds = torch.tensor(pred)
+        metric = MulticlassJaccardIndex(num_classes=len(category_name))
+        iou = metric(preds, target)
+        print("IOU: {}".format(iou))
         
         
