@@ -1,5 +1,6 @@
 from pointnet2.model import Net
 import torch
+import tensorflow as tf
 from torch_geometric.data import Data
 import sys
 from torch_geometric.loader import DataLoader
@@ -8,6 +9,7 @@ from torch_geometric.io import read_txt_array
 from datanet import DataNet
 import torch_geometric.transforms as T
 from torchmetrics.classification import MulticlassJaccardIndex
+from torchmetrics import Dice
 
 def calc_perc(part, vol):
     if part == vol:
@@ -18,6 +20,28 @@ def calc_perc(part, vol):
     
     return (part/vol) * 100
 
+def conv_labels(labels):
+    classes = torch.unique(labels)
+    new_labels = []
+    label_map = {}
+    
+    for i in range(len(labels)):
+        label = labels[i]
+        new_label = -1
+        
+        for j in range(len(classes)):
+            if classes[j] == label:
+                new_label = j
+                break
+        
+        if new_label == -1:
+            print("No suitable label found {} {}".format(label, classes))
+            break
+        
+        new_labels.append(new_label)
+    
+    return new_labels
+    
 if __name__ == '__main__':
     
     if len(sys.argv) >= 3:
@@ -53,7 +77,7 @@ if __name__ == '__main__':
         data = read_txt_array(filepath)
         pos = data[:, :3]
         x = data[:, 3:6]
-        y = data[:, -1].type(torch.long) 
+        labels = data[:, -1].type(torch.long) 
                 
         data = Data(pos=pos, x=x, category=0)
         data = pre_transform(data)
@@ -83,7 +107,7 @@ if __name__ == '__main__':
         f = open('predict_{}.txt'.format(modelname), 'wb')
         npos = pos.numpy()
         nrgb = x.numpy()
-        nlabel = y.numpy()
+        nlabel = labels.numpy()
         npred = pred.numpy()
         
         vol = len(npos)
@@ -118,13 +142,32 @@ if __name__ == '__main__':
             f.write(line.encode())
         f.close()
         
+        cc = 0
         for i in range(len(category_name)):
-            print("{}: {}/{}, {}%".format(category_name[i],category_correctness[i]['correct'], category_correctness[i]['volume'],calc_perc(category_correctness[i]['correct'], category_correctness[i]['volume'])))
+            c = calc_perc(category_correctness[i]['correct'], category_correctness[i]['volume']) / 100
+            cc += c
+            print("{}: {}/{}, {}%".format(category_name[i],category_correctness[i]['correct'], category_correctness[i]['volume'],c))
+
+        s = cc / len(category_name)
+        print("All {}".format(s))
+        #stackingbox 1
+        #banana 2
+        #apple 3
+        #orange 4
+        #pear 5
+        #plum 6
+        metric = MulticlassJaccardIndex(num_classes=6)
+        clabels = torch.tensor(conv_labels(labels))
+        cpreds = torch.tensor(conv_labels(pred))
         
-        target = torch.tensor(y)
-        preds = torch.tensor(pred)
-        metric = MulticlassJaccardIndex(num_classes=len(category_name))
-        iou = metric(preds, target)
+        iou = metric(cpreds, clabels)
         print("IOU: {}".format(iou))
+        dice_score = Dice(average='micro')
+        dice = dice_score(preds = cpreds, target = clabels)
+        print("DICE: {}".format(dice))
+
         
-        
+        m = tf.keras.metrics.MeanIoU(num_classes=2)
+        m.update_state( preds = cpreds, target = clabels )
+        miou = m.result().numpy()
+        print("MIOU: {}".format(miou))
