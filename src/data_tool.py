@@ -54,6 +54,7 @@ def parse_arguments():
     parser.add_argument('--info', action = "store_true", help='Shows information about the file')
     parser.add_argument('--labeling', action = "store_true", help='New data labeling')
     parser.add_argument('--labeling_all', action = "store_true", help='New data labeling for all')
+    parser.add_argument('--twoD', action = "store_true", help='Show in 2D')
     
     return parser.parse_args()
 
@@ -418,7 +419,7 @@ WHITE = [255,255,255]
 def draw_data(data, draw_callback = None):
     pcd = o3d.t.geometry.PointCloud()
     
-    if parser.with_pred_label:
+    if parser.with_pred_label and draw_callback is None:
         vol = len(data["labels"])
         
         for i in range(vol):
@@ -430,39 +431,59 @@ def draw_data(data, draw_callback = None):
             else:
                 data["colors"][i] = RED
                 
+    positions = []
     if draw_callback is not None:
         for i in range(len(data['positions'])):
             pos = data['positions'][i]
             color = data['colors'][i]
             label = data['labels'][i]
-            clabel = data['clabels'][i] if 'clabels' in data else None
+            clabel = data['pred_labels'][i] if 'pred_labels' in data else None
             data['colors'][i] = draw_callback(pos,color,label, clabel)
     
+    if parser.twoD:
+        data = convert_data(data, callback_2d)
+        
     pcd.point.positions = o3d.core.Tensor(data["positions"], o3d.core.float32)
     pcd.point.colors = o3d.core.Tensor(data["colors"], o3d.core.float32)
     pcd.point.labels = o3d.core.Tensor(data["labels"], o3d.core.int32)
-    o3d.visualization.draw([pcd], raw_mode = True)
+    
+    o3d.visualization.draw(
+        [pcd], 
+        raw_mode = True,
+        lookat = [0,0,0],
+        eye = [0,0,-0.1],
+        up = [0,1,0.1],
+        field_of_view = 10 ,
+        point_size = 2,
+        bg_color = (1,1,1,0)
+    )
+ 
+def callback_2d(pos, color, label, clabel):
+    return [pos[0],pos[1],0], color, label, clabel, False
  
 def draw_callback_color(pos, color, label, clabel):
     global GREEN, RED, YELLOW, BLUE
+    l = clabel
     
-    if label <= 0:
+    if l <= 0:
         return WHITE
-    elif label == 1: #stackingbox
+    elif l == 1: #stackingbox
         return BLUE
-    elif label == 2: #banana
+    elif l == 2: #banana
         return YELLOW
-    elif label == 3: #apple
+    elif l == 3: #apple
         return GREEN
-    elif label == 4: #orange
+    elif l == 4: #orange
         return RED
-    elif label == 5: #pear
+    elif l == 5: #pear
         return LIGHTBLUE
-    elif label == 6: #plum
+    elif l == 6: #plum
         return PURPLE
-    elif label == 7: #HAMMER
+    elif l == 7: #HAMMER
+        print("HAMMA found how?")
         return [0,0,0]
     else:
+        print("unknown label {}".format(l))
         return [0,0,0]
     
 def find_data(path):

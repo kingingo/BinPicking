@@ -1,6 +1,6 @@
 from pointnet2.model import Net
 import torch
-import tensorflow as tf
+#import tensorflow as tf
 from torch_geometric.data import Data
 import sys
 from torch_geometric.loader import DataLoader
@@ -10,6 +10,17 @@ from datanet import DataNet
 import torch_geometric.transforms as T
 from torchmetrics.classification import MulticlassJaccardIndex
 from torchmetrics import Dice
+from torchmetrics.classification import MulticlassPrecisionRecallCurve
+from sklearn.metrics import precision_recall_curve
+import numpy as np
+from sklearn.metrics import precision_recall_curve
+import matplotlib.pyplot as plt
+from sklearn import metrics
+from operator import itemgetter
+
+
+def extract(lst, index = 0):
+    return list( map(itemgetter(index), lst ))
 
 def calc_perc(part, vol):
     if part == vol:
@@ -167,7 +178,10 @@ if __name__ == '__main__':
         print("DICE: {}".format(dice))
 
         
-        m = tf.keras.metrics.MeanIoU(num_classes=2)
-        m.update_state( preds = cpreds, target = clabels )
-        miou = m.result().numpy()
-        print("MIOU: {}".format(miou))
+        #m = tf.keras.metrics.MeanIoU(num_classes=2)
+        #m.update_state( preds = cpreds, target = clabels )
+        #miou = m.result().numpy()
+        #print("MIOU: {}".format(miou))
+        
+        print(metrics.classification_report(labels, pred, digits=6))
+        print(metrics.confusion_matrix(labels, pred))

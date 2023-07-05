@@ -124,7 +124,7 @@ def test(model, device, test_loader, modelname):
             y_map[part] = torch.arange(part.size(0), device=device)
 
             #, absent_score=1.0
-            iou = jaccard_index(out[:, part].argmax(dim=-1), y_map[y], ignore_index = 0
+            iou = jaccard_index(out[:, part].argmax(dim=-1), y_map[y], ignore_index = 0,
                                 num_classes=part.size(0), task = 'multiclass')
             ious.append(iou)
 
