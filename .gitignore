@@ -6,4 +6,4 @@
 *.p
 .DS_Store
 data/
-model/*
+model/
