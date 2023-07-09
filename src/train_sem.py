@@ -17,6 +17,8 @@ from pointnet2.model import get_transformations as get_transformations2
 from pointnet2.model import get_pre_transformations as get_pre_transformations2
 from datetime import datetime
 import argparse
+from pickle import dump
+import matplotlib.pyplot as plt
 
 '''
 if __name__ == '__main__':
@@ -46,9 +48,21 @@ def parse_arguments():
 
     return parser.parse_args()
 
-def train(model, device, train_loader, optimizer, modelname):
+def draw_result(lst_iter, lst_loss, title):
+    plt.plot(lst_iter, lst_loss, '-b', label='loss')
+
+    plt.xlabel("n Epochs")
+    plt.legend(loc='upper left')
+    plt.title(title)
+
+    # save image
+    plt.savefig(title+".png")  # should before show method
+
+def train(model, device, train_loader, optimizer, modelname, epoch = 0):
     model.train()
 
+    _total_loss = 0
+    _counter_loss = 0
     total_loss = correct_nodes = total_nodes = 0
     length = len(train_loader)
     for i, data in enumerate(train_loader):
@@ -57,12 +71,6 @@ def train(model, device, train_loader, optimizer, modelname):
         if modelname == 'pointnet':
             #(x=[8684, 3], y=[8684], pos=[8684, 3], category=[1], batch=[8684], ptr=[2]
             
-            x = []
-            y = []
-            z = []
-            r = []
-            g = []
-            b = []
             t = []
             for j in range(len(data.pos)):
                 t.append([[data.pos[j][0],data.pos[j][1],data.pos[j][2], data.x[j][0], data.x[j][1], data.x[j][2]]])
@@ -81,15 +89,19 @@ def train(model, device, train_loader, optimizer, modelname):
         loss = F.nll_loss(out, target)
         loss.backward()
         optimizer.step()
+        
+        _total_loss += loss.item()
+        _counter_loss += 1
         total_loss += loss.item()
         correct_nodes += out.argmax(dim=1).eq(target).sum().item()
         total_nodes += data.num_nodes
 
-        if (i + 1) % length == 0:
-            print(f'[{i+1}/{length}] Loss: {total_loss / 10:.4f} '
+        if (i + 1) % 10 == 0:
+            print(f'[{i+1}/{length}] Epoche: {epoch} Loss: {total_loss / 10:.4f} '
                   f'Train Acc: {correct_nodes / total_nodes:.4f}')
             total_loss = correct_nodes = total_nodes = 0
 
+        return _total_loss / _counter_loss
 @torch.no_grad()
 def test(model, device, test_loader, modelname):
     model.eval()
@@ -168,15 +180,18 @@ def start_model(modelname, transform, pre_transform):
     
     model, optimizer, schedule = get_model(modelname, train_dataset, device)
     print("start training {}".format(modelname))
+    loss_list = []
     for epoch in range(1, args.epoch):
-        train(model=model, modelname=modelname, device=device, train_loader=train_loader, optimizer=optimizer)
+        loss = train(model=model, modelname=modelname, device=device, train_loader=train_loader, optimizer=optimizer, epoch = epoch)
+        loss_list.append(loss)
         iou = test(model=model, modelname=modelname, device = device, test_loader=test_loader)
-        print(f'{modelname} Epoch: {epoch:02d}, Test IoU: {iou:.4f}')
+        print(f'{modelname} Epoch: {epoch:02d}, Test IoU: {iou:.4f} Loss:{loss}')
         
         if schedule is not None:
             schedule.step()
     torch.save(model, model_path + '/'+modelname+'_model_'+datetime.today().strftime('%Y-%m-%d_%H:%M:%S')+".pth")
     print("done training {}".format(modelname))
+    draw_result(range(1, args.epoch),loss_list, 'loss_{}'.format(modelname))
    
 def get_transformations(modelname):
     print("load transformation functions...")

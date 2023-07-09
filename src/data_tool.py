@@ -488,12 +488,13 @@ def draw_callback_color(pos, color, label, clabel):
     
 def find_data(path):
     files = os.listdir(path)
+    data = []
     
     for file in files:
         filepath = path + "/" + file
         if (file.startswith("data") and file.endswith("ply")):
-            return filepath
-    return None
+            data.append(filepath)
+    return data
             
 def convert_files():
     folders = os.listdir(current_dir)
@@ -509,58 +510,60 @@ def convert_files():
         if not os.path.isdir(current_dir+ "/"+folder):
             continue
         path = current_dir + "/" + folder
-        filepath = find_data(path)
+        filepaths = find_data(path)
         
-        if filepath is None or not os.path.exists(filepath):
-            continue
-        
-        file = os.path.basename(filepath)
-        
-        counter+=1
-        print(f"loading data from {filepath}", end = '')    
-        
-        try:
-            splitted = folder.split("_")
-            if "_a" in folder:
-                datetime = splitted[2] + "_" + splitted[3]
-            elif len(splitted) == 4:
-                datetime = splitted[2] + "_" + splitted[3]
-            elif len(splitted) > 4:
-                datetime = splitted[2] + "_" + splitted[3] + "-"  + splitted[5] + "-" + splitted[6]
+        for filepath in filepaths:
+            if filepath is None or not os.path.exists(filepath):
+                continue
+            
+            file = os.path.basename(filepath)
+            _filename = os.path.splitext(file)[0]
+            
+            print(f"loading data from {filepath}", end = '')    
+            
+            try:
+                splitted = folder.split("_")
+                if "_a" in folder:
+                    datetime = splitted[2] + "_" + splitted[3]
+                elif len(splitted) == 4:
+                    datetime = splitted[2] + "_" + splitted[3]
+                elif len(splitted) > 4:
+                    datetime = splitted[2] + "_" + splitted[3] + "-"  + splitted[5] + "-" + splitted[6]
+                else:
+                    datetime = splitted[2] + "_" + splitted[3]
+            except:
+                print("\ncouldn't extract datetime from {}".format(filepath))
+                continue
+                
+            data = load_data(filepath)
+            
+            if data is None:
+                print("No DATA found... remove folder {}".format(path))
+                os.remove(filepath)
+                continue
+            
+            if len(data['positions']) < 50000 and file == 'data.ply':
+                os.rename(filepath, path + "/data_min.ply")
+                file = "data_min.ply"
+            
+            data = convert_data(data,callback_filter_points_by_bbox)
+            label_data = convert_data(data, callback_fix_label)
+            
+            #if parser.labeling_all:
+            #    label_data = convert_data(label_data, callback_clabels)
+                
+            if 'min' not in file:
+                down_sampled_data = down_sampling_data(label_data, parser.disable_info, parser.voxel_size, label_field='labels')
+                save_data(path + "/down_sampled_"+_filename+ ".ply", down_sampled_data)
+                save_data(path + "/trainings_"+_filename+"_" +datetime+".txt", down_sampled_data, header=False)
+                info_data(down_sampled_data, field='labels', spaces=5)
             else:
-                datetime = splitted[2] + "_" + splitted[3]
-        except:
-            print("\ncouldn't extract datetime from {}".format(filepath))
-            continue
-            
-        data = load_data(filepath)
-        
-        if data is None:
-            print("No DATA found... remove folder {}".format(path))
-            os.remove(filepath)
-            continue
-        
-        if len(data['positions']) < 50000 and file == 'data.ply':
-            os.rename(filepath, path + "/data_min.ply")
-            file = "data_min.ply"
-        
-        data = convert_data(data,callback_filter_points_by_bbox)
-        label_data = convert_data(data, callback_fix_label)
-        
-        #if parser.labeling_all:
-        #    label_data = convert_data(label_data, callback_clabels)
-            
-        if 'min' not in file:
-            down_sampled_data = down_sampling_data(label_data, parser.disable_info, parser.voxel_size, label_field='labels')
-            save_data(path + "/down_sampled_" + parser.file + ".ply", down_sampled_data)
-            save_data(path + "/trainings_" + parser.file + "_"+datetime+".txt", down_sampled_data, header=False)
-            info_data(down_sampled_data, field='labels', spaces=5)
-        else:
-            save_data(path + "/trainings_" + parser.file + "_"+datetime+".txt", label_data, header=False)
+                save_data(path + "/trainings_"+_filename+"_" +datetime+".txt", label_data, header=False)
+                info_data(label_data, spaces=5)
+                
+            save_data(path +"/test_"+_filename+"_"+datetime+".txt", label_data, False)
             info_data(label_data, spaces=5)
-            
-        save_data(path +"/test_" + parser.file + "_"+datetime+".txt", label_data, False)
-        info_data(label_data, spaces=5)
+        counter+=1
         print("{}% done".format(math.ceil(counter * 100.0 / count_folders)))   
     print(f"Converted {counter} files")
     
@@ -670,7 +673,7 @@ def gather_all_training_files(to_training_folder = 'training', to_test_folder = 
         
         files = os.listdir(path)
         for file in files:
-            if file.startswith("trainings") and file.endswith(".txt"):
+            if file.startswith("trainings") and ('coloured' not in file) and file.endswith(".txt"):
                 splitted = (file[0:len(file)-5]).split("_")
                 
                 datetime = dt.strptime(splitted[2] + " " + splitted[3], "%d-%m-%Y %H-%M-%S")
@@ -700,7 +703,7 @@ def gather_all_training_files(to_training_folder = 'training', to_test_folder = 
         files = os.listdir(path)
         
         for file in files:
-            if file.startswith("test") and file.endswith(".txt"):
+            if file.startswith("test") and ('coloured' not in file) and file.endswith(".txt"):
                 if not os.path.exists(path_to_folder + "/" + file):
                     shutil.copyfile(path + "/" + file, path_to_folder + "/" + file)
         
@@ -764,7 +767,7 @@ def create_ply_header(volume, format = 'x,y,z,red,green,blue'):
     
 if __name__ == "__main__":
     parser = parse_arguments()
-    current_dir = osp.join(os.curdir, '..', 'ply')
+    current_dir = osp.join(os.curdir, '..', 'data', 'ply')
     
     if parser.conv_ply:
         print("path: {}".format(parser.path))
