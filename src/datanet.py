@@ -11,8 +11,7 @@ class DataNet(InMemoryDataset):
     modelname = ''
         
     category_ids = {
-        'unbekannt': [0],
-        'data' : [0,1,2,3,4,5,6],
+        'data' : [1,2,3,4,5,6],
         'stackingbox' : [1],
         'banana' : [2],
         'apple' : [3],
@@ -22,8 +21,7 @@ class DataNet(InMemoryDataset):
     }
         
     seg_classes = {
-        'unbekannt': [0],
-        'data' : [0,1,2,3,4,5,6],
+        'data' : [1,2,3,4,5,6],
         'stackingbox' : [1],
         'banana' : [2],
         'apple' : [3],

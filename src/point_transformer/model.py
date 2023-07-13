@@ -78,6 +78,7 @@ class TransitionUp(torch.nn.Module):
         super().__init__()
         self.inc = in_channels
         self.outc = out_channels
+        print("trans up in:{} out:{}".format(in_channels,out_channels))
         self.mlp_sub = MLP([in_channels, out_channels], plain_last=False)
         self.mlp = MLP([out_channels, out_channels], plain_last=False)
 
