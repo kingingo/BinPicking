@@ -655,6 +655,16 @@ def get_testlist_index(list ,date):
             return i
     return -1
     
+def find_strptime_index(splitted, format = '%d-%m-%Y'):
+    for i in range(len(splitted)):
+        try:
+            dt.strptime(splitted[i], format)
+            return i
+        except ValueError:
+            continue
+    return None
+        
+    
 def gather_all_training_files(to_training_folder = 'training', to_test_folder = 'test'):
     path_to_folder = current_dir + "/" + to_training_folder
     
@@ -676,8 +686,18 @@ def gather_all_training_files(to_training_folder = 'training', to_test_folder = 
             if file.startswith("trainings") and ('coloured' not in file) and file.endswith(".txt"):
                 splitted = (file[0:len(file)-5]).split("_")
                 
-                datetime = dt.strptime(splitted[2] + " " + splitted[3], "%d-%m-%Y %H-%M-%S")
-                date = dt.strptime(splitted[2], "%d-%m-%Y")
+                date_index = find_strptime_index(splitted, '%d-%m-%Y')
+                if date_index is None:
+                    print("date_index is none, file: {}".format(file))
+                    continue
+                
+                time_index = find_strptime_index(splitted, '%H-%M-%S')
+                if time_index is None:
+                    print("time is none, file: {}".format(file))
+                    continue
+                
+                date = dt.strptime(splitted[date_index] , '%d-%m-%Y')
+                datetime = dt.strptime(splitted[date_index] + " " + splitted[time_index], '%d-%m-%Y %H-%M-%S')
                 index = get_testlist_index(test_files, date) 
                 
                 if index == -1:
