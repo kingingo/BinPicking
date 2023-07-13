@@ -6,6 +6,8 @@ import torch.utils.data
 from torch.autograd import Variable
 import numpy as np
 import torch.nn.functional as F
+import json
+from json import JSONEncoder
 from functools import partial
 
 pointnet_activations = {}
@@ -207,9 +209,41 @@ class PointNetDenseCls(nn.Module):
         x = F.relu(self.bn3(self.conv3(x)))
         x = self.conv4(x)
         x = x.transpose(2,1).contiguous()
+        
+        f = open("pointnet_test.txt", "a")
+        f.write(json.dumps(x.detach().numpy(), cls=NumpyArrayEncoder))
+        f.close()
+        
+        f = open("pointnet_test1.txt", "a")
+        f.write(json.dumps(x.view(-1,self.k).detach().numpy(), cls=NumpyArrayEncoder))
+        f.close()
+
+        
         x = F.log_softmax(x.view(-1,self.k), dim=-1)
+        
+        f = open("pointnet_test2.txt", "a")
+        f.write(json.dumps(x.detach().numpy(), cls=NumpyArrayEncoder))
+        f.close()
         x = x.view(batchsize, n_pts, self.k)
+        
+        f = open("pointnet_test3.txt", "a")
+        f.write(json.dumps(x.detach().numpy(), cls=NumpyArrayEncoder))
+        f.close()
+        
+        f = open("pointnet_test4.txt", "a")
+        f.write(json.dumps(x.view(-1, 7).detach().numpy(), cls=NumpyArrayEncoder))
+        f.close()
+        
+        f = open("pointnet_test5.txt", "a")
+        f.write(json.dumps(x.view(-1, 7).max(1)[1].detach().numpy(), cls=NumpyArrayEncoder))
+        f.close()
         return x, trans, trans_feat
+
+class NumpyArrayEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
 
 def feature_transform_regularizer(trans):
     d = trans.size()[1]

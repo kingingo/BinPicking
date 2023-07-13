@@ -17,6 +17,9 @@ def jaccard(labels, preds):
     '''
     
     union = 0
+    for i in range(len(labels)):
+        if labels[i] == preds[i]:
+            union+=1
     
     
     return 0
