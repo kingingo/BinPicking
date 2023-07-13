@@ -408,14 +408,6 @@ def save_data(filepath, data, header = True, str_fields = None):
     f.write(str(content).encode('utf-8'))
     f.close()
 
-GREEN = [0,255,0]
-RED = [229,0,0]
-YELLOW = [255,255,0]
-BLUE = [0,0,255]
-LIGHTBLUE = [0,255,255]
-PURPLE = [255,0,255]
-WHITE = [255,255,255]
-
 def draw_data(data, draw_callback = None):
     pcd = o3d.t.geometry.PointCloud()
     
@@ -437,7 +429,7 @@ def draw_data(data, draw_callback = None):
             pos = data['positions'][i]
             color = data['colors'][i]
             label = data['labels'][i]
-            clabel = data['pred_labels'][i] if 'pred_labels' in data else None
+            clabel = data['pred_labels'][i] if 'pred_labels' in data else label
             data['colors'][i] = draw_callback(pos,color,label, clabel)
     
     if parser.twoD:
@@ -460,6 +452,14 @@ def draw_data(data, draw_callback = None):
  
 def callback_2d(pos, color, label, clabel):
     return [pos[0],pos[1],0], color, label, clabel, False
+
+GREEN = [0,255,0]
+RED = [229,0,0]
+YELLOW = [255,255,0]
+BLUE = [0,0,255]
+LIGHTBLUE = [0,255,255]
+PURPLE = [255,0,255]
+WHITE = [255,255,255]
  
 def draw_callback_color(pos, color, label, clabel):
     global GREEN, RED, YELLOW, BLUE

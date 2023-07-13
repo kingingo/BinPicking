@@ -17,7 +17,24 @@ from sklearn.metrics import precision_recall_curve
 import matplotlib.pyplot as plt
 from sklearn import metrics
 from operator import itemgetter
+import json
+from json import JSONEncoder
 
+def key_to_json(data):
+    if data is None or isinstance(data, (bool, int, str)):
+        return data
+    if isinstance(data, (tuple, frozenset)):
+        return str(data)
+    raise TypeError
+
+def to_json(data):
+    if data is None or isinstance(data, (bool, int, tuple, range, str, list)):
+        return data
+    if isinstance(data, (set, frozenset)):
+        return sorted(data)
+    if isinstance(data, dict):
+        return {key_to_json(key): to_json(data[key]) for key in data}
+    raise TypeError
 
 def extract(lst, index = 0):
     return list( map(itemgetter(index), lst ))
@@ -30,6 +47,29 @@ def calc_perc(part, vol):
         return 0
     
     return (part/vol) * 100
+
+class NumpyArrayEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return JSONEncoder.default(self, obj)
+
+def max_indicies(list):
+    npreds = []
+    preds = list.max(1)[1]
+    indicies = []
+    
+    for i in range(preds.shape[0]):
+        index = preds[i]
+        max_value = list[i].max()
+        
+        if max_value < -1:
+            index = 0
+        
+        npreds.append(torch.tensor(index, dtype=torch.int64))
+        
+    
+    return npreds
 
 def conv_labels(labels):
     classes = torch.unique(labels)
@@ -113,13 +153,28 @@ if __name__ == '__main__':
             else:
                 data = data.to(device)
                 outs = model(data.x, data.pos, data.batch)
+        #pred = outs.max(1)[1]
+        pred = max_indicies(outs)
+       
+        '''
+        npred = pred.numpy()
+        prr = np.array(npred)
         
-        pred = outs.max(1)[1]
+        pt = {}
+        for u in range(npred.shape[0]):
+            p = npred[u].item()
+            if p != 1:
+                pt[p] = outs[u].tolist()
+                
+        f = open("pointnet333.txt", "a")
+        f.write(json.dumps(pt))
+        f.close()
+        '''
+        
         f = open('predict_{}.txt'.format(modelname), 'wb')
         npos = pos.numpy()
         nrgb = x.numpy()
         nlabel = labels.numpy()
-        npred = pred.numpy()
         
         vol = len(npos)
         #[0,1,2] 
@@ -128,6 +183,8 @@ if __name__ == '__main__':
         #2 - banana
         #3 - apple
         #4 - orange
+        #5 pear
+        #6 plum
         category_name = ["nothing", "stackingbox", "banana", "apple", "orange", "pear", "plum", "hammer"]
         category_correctness = []
         for i in range(len(category_name)):
@@ -161,13 +218,24 @@ if __name__ == '__main__':
 
         s = cc / len(category_name)
         print("All {}".format(s))
+        
+        print("Wrong:")
+        cc = 0
+        for i in range(len(category_name)):
+            c = calc_perc(category_correctness[i]['wrong'], category_correctness[i]['volume']) / 100
+            cc += c
+            print("{}: {}/{}, {}%".format(category_name[i],category_correctness[i]['wrong'], category_correctness[i]['volume'],c))
+
+        s = cc / len(category_name)
+        print("WRONG All {}".format(s))
         #stackingbox 1
         #banana 2
         #apple 3
         #orange 4
         #pear 5
         #plum 6
-        metric = MulticlassJaccardIndex(num_classes=6)
+        exit;
+        metric = MulticlassJaccardIndex(num_classes=7)
         clabels = torch.tensor(conv_labels(labels))
         cpreds = torch.tensor(conv_labels(pred))
         
@@ -183,5 +251,5 @@ if __name__ == '__main__':
         #miou = m.result().numpy()
         #print("MIOU: {}".format(miou))
         
-        print(metrics.classification_report(labels, pred, digits=6))
+        print(metrics.classification_report(labels, pred, digits=7))
         print(metrics.confusion_matrix(labels, pred))

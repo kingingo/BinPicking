@@ -197,5 +197,5 @@ class Net(torch.nn.Module):
 
         # Class score
         out = self.mlp_output(x)
-
+        
         return F.log_softmax(out, dim=-1)
