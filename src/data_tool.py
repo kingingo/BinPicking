@@ -182,6 +182,7 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
     labels = []
     clabels = []
     pred_labels = []
+    preds = []
     
     header = ''
     for line in lines:
@@ -205,6 +206,7 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
             label = None
             clabel = None
             pred_label = None
+            pred = None
             
             for i in range(len(fields)):
                 field = fields[i]
@@ -231,6 +233,8 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
                     clabel = data[i] 
                 elif field == 'pred_label':
                     pred_label = data[i] 
+                elif field == 'pred':
+                    pred = data[i] 
                 else:
                     print("field not found! {}".format(data[i]))
                     
@@ -244,6 +248,8 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
                 clabels.append(int(clabel))
             if pred_label is not None:
                 pred_labels.append(int(pred_label))
+            if pred is not None:
+                preds.append(float(pred))
             
     data = {'fields':fields}
     
@@ -255,6 +261,8 @@ def load_data(filepath, str_fields = "x,y,z,r,g,b,label,clabel"):
         data['clabels'] = clabels
     if len(pred_labels) > 0:
         data['pred_labels'] = pred_labels
+    if len(preds) > 0:
+        data['preds'] = preds
     if len(positions) > 0:
         data['colors'] = colors
     if len(header) > 0:
@@ -568,6 +576,7 @@ def convert_files():
     print(f"Converted {counter} files")
     
 def callback_fix_label(pos, color, label, clabel):
+    '''
     is_cl_zero = (int(clabel) == 0)
     is_l_zero = (int(label) == 0)
     
@@ -577,6 +586,9 @@ def callback_fix_label(pos, color, label, clabel):
         return pos, color, label, label, False
     elif not is_cl_zero and is_l_zero:
         return pos, color, clabel, clabel, False
+    '''
+    if label > 6 or clabel > 6:
+        return pos, color, 0, 0, False
     return pos, color, label, clabel, False
     
 def convert_rgb(pos, c, label):
@@ -734,20 +746,28 @@ def info_data(data, field = 'clabels', spaces = 0):
     name_maping = ['Nothing', 'Stackingbox', 'Banana', 'Apple', 'Orange', 'Pear', 'Plum','Hammer']
     
     if field in data:
+        print("used {}".format(field))
         labels = data[field]
     else:
         if 'labels' in data:
+            print("used labels")
             labels = data['labels']
         elif 'clabels' in data:
+            print("used clabels")
             labels = data['clabels']
         else:
             print("info_data: No labels found?")
             return
     unique_labels = set(labels)
+    print("Unique labels found:")
+    for u in unique_labels:
+        print("{} {}".format(u, name_maping[u]))
     counter_label_map = [0] * len(name_maping)
     
     for i in range(len(labels)):
         label = labels[i]
+        if label == 4:
+            print("PRED: {}".format(data['preds'][i]))
         counter_label_map[label] = counter_label_map[label]+1
         
     for i in range(len(name_maping)):

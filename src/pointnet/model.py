@@ -175,6 +175,7 @@ class PointNetCls(nn.Module):
         x = F.relu(self.bn1(self.fc1(x)))
         x = F.relu(self.bn2(self.dropout(self.fc2(x))))
         x = self.fc3(x)
+        #return torch.softmax(x, dim=1, dtype=None), trans, trans_feat
         return F.log_softmax(x, dim=1), trans, trans_feat
 
 class PointNetDenseCls(nn.Module):
@@ -210,33 +211,8 @@ class PointNetDenseCls(nn.Module):
         x = self.conv4(x)
         x = x.transpose(2,1).contiguous()
         
-        f = open("pointnet_test.txt", "a")
-        f.write(json.dumps(x.detach().numpy(), cls=NumpyArrayEncoder))
-        f.close()
-        
-        f = open("pointnet_test1.txt", "a")
-        f.write(json.dumps(x.view(-1,self.k).detach().numpy(), cls=NumpyArrayEncoder))
-        f.close()
-
-        
+        #x = torch.softmax(x.view(-1,self.k), dim=-1, dtype=None)
         x = F.log_softmax(x.view(-1,self.k), dim=-1)
-        
-        f = open("pointnet_test2.txt", "a")
-        f.write(json.dumps(x.detach().numpy(), cls=NumpyArrayEncoder))
-        f.close()
-        x = x.view(batchsize, n_pts, self.k)
-        
-        f = open("pointnet_test3.txt", "a")
-        f.write(json.dumps(x.detach().numpy(), cls=NumpyArrayEncoder))
-        f.close()
-        
-        f = open("pointnet_test4.txt", "a")
-        f.write(json.dumps(x.view(-1, 7).detach().numpy(), cls=NumpyArrayEncoder))
-        f.close()
-        
-        f = open("pointnet_test5.txt", "a")
-        f.write(json.dumps(x.view(-1, 7).max(1)[1].detach().numpy(), cls=NumpyArrayEncoder))
-        f.close()
         return x, trans, trans_feat
 
 class NumpyArrayEncoder(JSONEncoder):

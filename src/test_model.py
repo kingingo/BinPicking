@@ -43,7 +43,7 @@ def calc_perc(part, vol):
     if part == vol:
         return 100
     
-    if part == 0:
+    if part == 0 or vol == 0:
         return 0
     
     return (part/vol) * 100
@@ -54,22 +54,39 @@ class NumpyArrayEncoder(JSONEncoder):
             return obj.tolist()
         return JSONEncoder.default(self, obj)
 
-def max_indicies(list):
+def max_indicies(list, target, min_confidence_value = -1):
+    nlabels = []
     npreds = []
     preds = list.max(1)[1]
-    indicies = []
     
     for i in range(preds.shape[0]):
         index = preds[i]
+        label = target[i]
+        
         max_value = list[i].max()
+        mean = list[i].mean()
+        median = list[i].median()
         
-        if max_value < -1:
+        if max_value < min_confidence_value:
+            print("label: {}, pred_label: {}, max_value: {}, mean: {}, median: {}, pred: {}, exp: {}"
+                  .format(
+                      label, 
+                      index, 
+                      max_value ,
+                      mean, 
+                      median,
+                      list[i],
+                      list[i].exp()
+                      )
+                  )
             index = 0
+            #print("INDEX:{} max_value:{} set to 0".format(index,max_value))
         
-        npreds.append(torch.tensor(index, dtype=torch.int64))
+        nlabels.append(torch.tensor(index, dtype=torch.int64))
+        npreds.append(max_value)
         
     
-    return npreds
+    return nlabels, npreds
 
 def conv_labels(labels):
     classes = torch.unique(labels)
@@ -154,7 +171,7 @@ if __name__ == '__main__':
                 data = data.to(device)
                 outs = model(data.x, data.pos, data.batch)
         #pred = outs.max(1)[1]
-        pred = max_indicies(outs)
+        pred_labels, preds = max_indicies(outs, labels)
        
         '''
         npred = pred.numpy()
@@ -171,6 +188,7 @@ if __name__ == '__main__':
         f.close()
         '''
         
+        f2 = open('predict_{}_2.txt'.format(modelname), 'wb')
         f = open('predict_{}.txt'.format(modelname), 'wb')
         npos = pos.numpy()
         nrgb = x.numpy()
@@ -187,9 +205,11 @@ if __name__ == '__main__':
         #6 plum
         category_name = ["nothing", "stackingbox", "banana", "apple", "orange", "pear", "plum", "hammer"]
         category_correctness = []
+        pred_catogory_counter = []
         for i in range(len(category_name)):
-            category_correctness.append({'wrong':0, 'correct': 0, 'volume': 0, 'name': category_name[i]})
-            
+            category_correctness.append({'wrong':0, 'correct': 0, 'label': 0, "pred_label": 0, 'name': category_name[i]})
+
+                    
         for i in range(vol):
             x = npos[i][0]
             y = npos[i][1]
@@ -199,42 +219,45 @@ if __name__ == '__main__':
             g = nrgb[i][1]
             b = nrgb[i][2]
             
-            pred_label = pred[i]
+            pred_label = pred_labels[i]
             label = int(nlabel[i])
             
             index = 'correct' if int(pred_label) == label else 'wrong'
             category_correctness[label][index] += 1
-            category_correctness[label]['volume'] += 1
+            category_correctness[pred_label]['pred_label'] += 1
+            category_correctness[label]['label'] += 1
             
-            line = "{} {} {} {} {} {} {} {}\n".format(x,y,z,int(r),int(g),int(b),label,pred_label)
+            line = "{} {} {} {} {} {} {} {}\n".format(x,y,z,int(r),int(g),int(b),pred_label, preds[i])
+            line2 = "{} {} {} {} {} {} {} {}\n".format(x,y,z,int(r),int(g),int(b),label,pred_label)
+            f2.write(line2.encode())
             f.write(line.encode())
+        f2.close()
         f.close()
         
         cc = 0
         for i in range(len(category_name)):
-            c = calc_perc(category_correctness[i]['correct'], category_correctness[i]['volume']) / 100
+            vol_label = category_correctness[i]['label']
+            vol_pred = category_correctness[i]['pred_label']
+            
+            c = calc_perc(category_correctness[i]['correct'], vol_label) / 100
+            w = calc_perc(category_correctness[i]['wrong'], vol_label) / 100
             cc += c
-            print("{}: {}/{}, {}%".format(category_name[i],category_correctness[i]['correct'], category_correctness[i]['volume'],c))
+            
+            print("{} - correct/volume:{}/{} [{}%], wrong/volume:{}/{} [{}%], vol_pred:{}/{}, ".format(
+                category_name[i],
+                category_correctness[i]['correct'], 
+                vol_label, 
+                c,
+                category_correctness[i]['wrong'], 
+                vol_label,
+                w,
+                vol_pred,
+                vol_label
+            ))
 
         s = cc / len(category_name)
         print("All {}".format(s))
-        
-        print("Wrong:")
-        cc = 0
-        for i in range(len(category_name)):
-            c = calc_perc(category_correctness[i]['wrong'], category_correctness[i]['volume']) / 100
-            cc += c
-            print("{}: {}/{}, {}%".format(category_name[i],category_correctness[i]['wrong'], category_correctness[i]['volume'],c))
-
-        s = cc / len(category_name)
-        print("WRONG All {}".format(s))
-        #stackingbox 1
-        #banana 2
-        #apple 3
-        #orange 4
-        #pear 5
-        #plum 6
-        exit;
+        exit()
         metric = MulticlassJaccardIndex(num_classes=7)
         clabels = torch.tensor(conv_labels(labels))
         cpreds = torch.tensor(conv_labels(pred))

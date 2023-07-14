@@ -90,5 +90,7 @@ class Net(torch.nn.Module):
         fp3_out = self.fp3_module(*sa3_out, *sa2_out)
         fp2_out = self.fp2_module(*fp3_out, *sa1_out)
         x, _, _ = self.fp1_module(*fp2_out, *sa0_out)
-
-        return self.mlp(x).log_softmax(dim=-1)
+        x = self.mlp(x)
+        x = x.log_softmax(dim=-1)
+        
+        return x
