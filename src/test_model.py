@@ -20,6 +20,23 @@ from operator import itemgetter
 import json
 from json import JSONEncoder
 
+df = None
+modelname = None
+
+def init_df():
+    global df, modelname
+    
+    if df is None:
+        df = open('details_{}.txt'.format(modelname), 'wb')
+        
+def dwrite(_str):
+    global df
+    init_df()
+    df.write(_str.encode())
+    df.write("\n".encode())
+    print(_str)
+    
+
 def key_to_json(data):
     if data is None or isinstance(data, (bool, int, str)):
         return data
@@ -54,20 +71,44 @@ class NumpyArrayEncoder(JSONEncoder):
             return obj.tolist()
         return JSONEncoder.default(self, obj)
 
-def max_indicies(list, target, min_confidence_value = -1):
+def max_indicies(list, target, min_confidence_value = 0.5):
+    dwrite("min confidence value: {}".format(min_confidence_value))
+    name_maping = ['Nothing', 'Stackingbox', 'Banana', 'Apple', 'Orange', 'Pear', 'Plum','Hammer']
+    avg = [0] * 7
+    vol = [0] * 7
+    avg_pred = [0] * 7
+    vol_pred = [0] * 7
+    
+    avg_n = 0
+    vol_n = 0
+    
     nlabels = []
     npreds = []
     preds = list.max(1)[1]
     
     for i in range(preds.shape[0]):
         index = preds[i]
-        label = target[i]
+        label = int(target[i])
         
-        max_value = list[i].max()
+        max_value = list[i].exp().max()
         mean = list[i].mean()
         median = list[i].median()
         
+        avg_pred[index] += max_value
+        vol_pred[index] +=1
+        
+        if label == index:
+            vol[label] += 1
+            avg[label] += max_value
+        
+        if label == 0:
+            vol_n += 1
+            avg_n += max_value
+            
+        
         if max_value < min_confidence_value:
+            
+            '''
             print("label: {}, pred_label: {}, max_value: {}, mean: {}, median: {}, pred: {}, exp: {}"
                   .format(
                       label, 
@@ -79,19 +120,71 @@ def max_indicies(list, target, min_confidence_value = -1):
                       list[i].exp()
                       )
                   )
+                  '''
             index = 0
-            #print("INDEX:{} max_value:{} set to 0".format(index,max_value))
-        
+        else:
+            '''
+            if index > 1:
+                dwrite("label: {}, pred_label: {}, max_value: {}, mean: {}, median: {}, pred: {}, exp: {}"
+                  .format(
+                      label, 
+                      index, 
+                      max_value ,
+                      mean, 
+                      median,
+                      list[i],
+                      list[i].exp()
+                      )
+                  )
+            '''
         nlabels.append(torch.tensor(index, dtype=torch.int64))
         npreds.append(max_value)
         
+    for i in range(len(avg)):
+        
+        if vol[i] != 0:
+            avg[i] /= vol[i]
+            
+        if vol_pred[i] != 0:
+            avg_pred[i] /= vol_pred[i]
+        
+        dwrite("label: {}, name: {}, avg_value:{}, avg_value_pred: {}".format(i, name_maping[i], avg[i], avg_pred[i]))    
+
+    if vol_n != 0:
+        avg_n /= vol_n
+    dwrite("Nothing vol_n: {} ,avg_max_value: {}".format(vol_n, avg_n))
     
     return nlabels, npreds
 
+def unique(_list):
+    ulist = []
+    
+    for entry in _list:
+        if entry not in ulist:
+            ulist.append(entry)
+            
+    ulist.sort()
+    return ulist
+
+def fix_labels(labels):
+    nlabels = []
+    
+    for label in labels:
+        if label > 6:
+            label = 0
+        nlabels.append(label)
+    
+    return nlabels
+
 def conv_labels(labels):
-    classes = torch.unique(labels)
+    
+    if not torch.is_tensor(labels):
+        classes = unique(labels)
+    else:
+        classes = torch.unique(labels)
+        
+    print("CLASSES: {}".format(classes))
     new_labels = []
-    label_map = {}
     
     for i in range(len(labels)):
         label = labels[i]
@@ -111,7 +204,6 @@ def conv_labels(labels):
     return new_labels
     
 if __name__ == '__main__':
-    
     if len(sys.argv) >= 3:
         model_name = sys.argv[1]
         file = sys.argv[2]
@@ -123,14 +215,14 @@ if __name__ == '__main__':
             print("Couldn't find {}".format(model_path))
             exit()
         else:
-            print("Model:{}".format(model_path))
+            dwrite("Model:{}".format(model_path))
             
         filepath = osp.join(osp.dirname(osp.realpath(__file__)), file)
         if not osp.isfile(model_path):
             print("Couldn't find {}".format(filepath))
             exit()
         else:
-            print("File:{}".format(filepath))
+            dwrite("File:{}".format(filepath))
             
         transform = T.Compose([
             T.RandomJitter(0.01),
@@ -140,12 +232,13 @@ if __name__ == '__main__':
         ])
         pre_transform = T.NormalizeScale()
         
-        print("Modelname: {}".format(modelname))
+        dwrite("Modelname: {}".format(modelname))
         device = torch.device('cpu')
         data = read_txt_array(filepath)
         pos = data[:, :3]
         x = data[:, 3:6]
         labels = data[:, -1].type(torch.long) 
+        labels = fix_labels(labels)
                 
         data = Data(pos=pos, x=x, category=0)
         data = pre_transform(data)
@@ -192,7 +285,7 @@ if __name__ == '__main__':
         f = open('predict_{}.txt'.format(modelname), 'wb')
         npos = pos.numpy()
         nrgb = x.numpy()
-        nlabel = labels.numpy()
+        nlabel = labels
         
         vol = len(npos)
         #[0,1,2] 
@@ -243,7 +336,7 @@ if __name__ == '__main__':
             w = calc_perc(category_correctness[i]['wrong'], vol_label) / 100
             cc += c
             
-            print("{} - correct/volume:{}/{} [{}%], wrong/volume:{}/{} [{}%], vol_pred:{}/{}, ".format(
+            dwrite("{} - correct/volume:{}/{} [{}%], wrong/volume:{}/{} [{}%], vol_pred:{}/{}, ".format(
                 category_name[i],
                 category_correctness[i]['correct'], 
                 vol_label, 
@@ -256,17 +349,17 @@ if __name__ == '__main__':
             ))
 
         s = cc / len(category_name)
-        print("All {}".format(s))
-        exit()
+        dwrite("All {}".format(s))
+        
         metric = MulticlassJaccardIndex(num_classes=7)
-        clabels = torch.tensor(conv_labels(labels))
-        cpreds = torch.tensor(conv_labels(pred))
+        clabels = torch.tensor(labels)
+        cpreds = torch.tensor(pred_labels)
         
         iou = metric(cpreds, clabels)
-        print("IOU: {}".format(iou))
+        dwrite("IOU: {}".format(iou))
         dice_score = Dice(average='micro')
         dice = dice_score(preds = cpreds, target = clabels)
-        print("DICE: {}".format(dice))
+        dwrite("DICE: {}".format(dice))
 
         
         #m = tf.keras.metrics.MeanIoU(num_classes=2)
@@ -274,5 +367,6 @@ if __name__ == '__main__':
         #miou = m.result().numpy()
         #print("MIOU: {}".format(miou))
         
-        print(metrics.classification_report(labels, pred, digits=7))
-        print(metrics.confusion_matrix(labels, pred))
+        dwrite(metrics.classification_report(labels, pred_labels, digits=7))
+        dwrite(np.array2string(metrics.confusion_matrix(labels, pred_labels)))
+        df.close()
